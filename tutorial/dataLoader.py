@@ -50,10 +50,42 @@ class ImageTextDataset(Dataset):
             img = self.transform(img)
 
         caplen = len(self.data['CAPTIONS'][i])
-        caption = torch.LongTensor(self.data['CAPTIONS'][i]+ [self.vocab['<pad>']] * (self.max_len + 2 - caplen))
+        caption = torch.LongTensor(self.data['CAPTIONS'][i]+ [self.vocab['<pad>']] * (self.max_len + 2 - caplen)) 
         
         return img, caption, caplen
         
 
     def __len__(self):
         return self.dataset_size
+    
+def mktrainval(data_dir, vocab_path, batch_size, workers=4):
+    train_tx = transforms.Compose([
+        transforms.Resize(256),
+        transforms.RandomCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    val_tx = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
+    train_set = ImageTextDataset(os.path.join(data_dir, 'train_data.json'), 
+                                 vocab_path, 'train',  transform=train_tx)
+    valid_set = ImageTextDataset(os.path.join(data_dir, 'val_data.json'), 
+                                 vocab_path, 'val', transform=val_tx)
+    test_set = ImageTextDataset(os.path.join(data_dir, 'test_data.json'), 
+                                 vocab_path, 'test', transform=val_tx)
+
+    train_loader = torch.utils.data.DataLoader(
+        train_set, batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
+
+    valid_loader = torch.utils.data.DataLoader(
+        valid_set, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, drop_last=False)
+    
+    test_loader = torch.utils.data.DataLoader(
+        test_set, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, drop_last=False)
+
+    return train_loader, valid_loader, test_loader   

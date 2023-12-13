@@ -32,6 +32,8 @@ def create_dataset(dataset='flickr8k',
     image_captions = defaultdict(list)  
     vocab = Counter()
 
+    print(vocab)
+
     for img in data['images']:
         split = img['split']
         captions = []
@@ -106,8 +108,9 @@ with open('../data/flickr8k/val_data.json', 'r') as f:
 # 展示第12张图片，其对应的文本描述序号是60到64
 content_img = Image.open(data['IMAGES'][12])
 # content_img = Image.open("../data/flickr8k/images/2090545563_a4e66ec76b.jpg")
-plt.imshow(content_img)
-plt.show()
 
-for i in range(5):
-    print(' '.join([vocab_idx2word[word_idx] for word_idx in data['CAPTIONS'][12*5+i]]))
+# plt.imshow(content_img)
+# plt.show()
+
+# for i in range(5):
+#     print(' '.join([vocab_idx2word[word_idx] for word_idx in data['CAPTIONS'][12*5+i]]))
