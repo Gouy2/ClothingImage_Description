@@ -14,70 +14,36 @@ image_path = "../data/cloth/images"
 vocab_path = "../data/cloth/vocab.json"
 
 
-# with open(file_path, 'r') as file:
-#     original_data = json.load(file)
+with open(os.path.join(file_path, 'test_captions.json'), 'r') as file1:
+    test_captions_data = json.load(file1)
 
-# # 初始化转换后的结构
-# transformed_data = {"IMAGES": [], "CAPTIONS": []}
+with open(os.path.join(file_path, 'train_captions.json'), 'r') as file2:
+    train_captions_data = json.load(file2)
 
-# # 填充转换后的结构
-# for image_name, captions in original_data.items():
-#     # 添加图片名称
-#     transformed_data["IMAGES"].append(image_name)
+# 初始化转换后的结构
+transformed_data = {"IMAGES": [], "CAPTIONS": []}
+
+# 填充转换后的结构
+for image_name, captions in test_captions_data.items():
+    # 添加图片名称
+    transformed_data["IMAGES"].append(image_name)
     
-#     # 确保描述是字符串格式，如果不是，转换为字符串
-#     if not isinstance(captions, str):
-#         captions = ' '.join(captions)
+    # 确保描述是字符串格式，如果不是，转换为字符串
+    if not isinstance(captions, str):
+        captions = ' '.join(captions)
 
 
-#     split_captions = [caption.strip() for caption in captions.split('.') if caption.strip()]
+    split_captions = [caption.strip() for caption in captions.split('.') if caption.strip()]
 
 
-#     # print(split_captions)
-#     # print('-------------------')
-
-#     for i in range(len(split_captions)):
-#         # print(split_captions[i])
-#         if len(split_captions[i]) < captions_per_image:
-#             split_captions = split_captions[i] + \
-#                 [random.choice(split_captions[i]) for _ in range(captions_per_image - len(split_captions[i]))]
+    # print(split_captions)
+    # print('-------------------')
     
 
-#     # 添加描述
-#     for caption in split_captions:
-#         transformed_data["CAPTIONS"].append([caption])
+    # 添加描述
+    for caption in split_captions:
+        transformed_data["CAPTIONS"].append([caption])
 
-
-# # 合并所有描述为一个长文本
-# all_captions = [item for sublist in transformed_data["CAPTIONS"] for item in sublist]
-# all_text = " ".join(all_captions)
-
-# # 分割文本为单词并统计频率
-# words = all_text.split()
-# word_counts = Counter(words)
-
-# # 创建词典并排序（最常见的单词排在前面）
-# vocab = sorted(word_counts, key=word_counts.get, reverse=True)
-
-# # 添加特殊标识符
-# special_tokens = ["<pad>", "<unk>", "<start>", "<end>"]
-# vocab = special_tokens + vocab
-
-# # 将词典转换为 {word: index} 形式
-# word_to_index = {word: index for index, word in enumerate(vocab)}
-
-# # 展示词典的前几个条目以确认正确
-# print(list(itertools.islice(word_to_index.items(), 10)))
-
-# with open(vocab_path, 'w') as fw:
-#         json.dump(word_to_index, fw)
-
-
-
-# 定义一个函数来清理文本，移除逗号
-def clean_text(text):
-    # 移除逗号并返回清理后的文本
-    return re.sub(r',', '', text)
 
 def process_punctuation(text):
     # 在逗号和句号前添加空格
@@ -85,11 +51,7 @@ def process_punctuation(text):
     processed_text = re.sub(r'\.', ' .', processed_text)
     return processed_text
 
-with open(os.path.join(file_path, 'test_captions.json'), 'r') as file1:
-    test_captions_data = json.load(file1)
 
-with open(os.path.join(file_path, 'train_captions.json'), 'r') as file2:
-    train_captions_data = json.load(file2)
 
 # 提取 .json 中的所有描述
 all_test_captions = [caption for image, caption in test_captions_data.items()]
