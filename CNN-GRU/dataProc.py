@@ -51,13 +51,33 @@ def process_punctuation(text):
     return processed_text
 
 def process_vocab(test_captions_data, train_captions_data, vocab_path):
-    #提取 .json 中的所有描述
-    all_test_captions = [caption for image, caption in test_captions_data.items()]
-    all_train_captions =[caption for image, caption in train_captions_data.items()] 
+    # 提取 .json 中的所有描述
+    all_test_captions = []
+    all_train_captions = []
 
-    # 合并两个文件中的描述，并分割为单词
-    all_captions_combined = all_test_captions + all_train_captions
-    processed_captions_combined = [process_punctuation(caption) for caption in all_captions_combined]
+    for image, captions in test_captions_data.items():
+        if isinstance(captions, list):
+            all_test_captions.extend(captions)
+        else:
+            all_test_captions.append(captions)
+
+    for image, captions in train_captions_data.items():
+        if isinstance(captions, list):
+            all_train_captions.extend(captions)
+        else:
+            all_train_captions.append(captions)
+
+    # 确保所有描述都是字符串
+    all_captions_combined = []
+    for caption in all_test_captions + all_train_captions:
+        if isinstance(caption, str):
+            all_captions_combined.append(caption)
+        elif isinstance(caption, list):
+            all_captions_combined.extend(caption)
+
+    # 处理标点符号
+    processed_captions_combined = [process_punctuation(caption) for caption in all_captions_combined if isinstance(caption, str)]
+
     all_words_combined = " ".join(processed_captions_combined).split()
     # print(all_words_combined)
 
