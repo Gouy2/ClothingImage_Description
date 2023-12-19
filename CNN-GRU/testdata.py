@@ -92,6 +92,8 @@ with open(vocab_path, 'w') as fw:
 
 
 unk_index = word_to_index_combined["<unk>"]
+
+
 transformed_data_with_indices = {"IMAGES": transformed_data["IMAGES"], "CAPTIONS": []}
 
 for caption_list in transformed_data["CAPTIONS"]:
