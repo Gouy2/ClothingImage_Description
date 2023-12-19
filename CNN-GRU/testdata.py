@@ -34,19 +34,22 @@ for image_name, captions in test_captions_data.items():
     # if not isinstance(captions, str):
     #     captions = ' '.join(captions)
 
-    print (captions)
-
-    # 复制或截断描述以达到目标数量
-    if len(captions) < target_num_captions:
-        # 复制描述
-        captions += [random.choice(captions) for _ in range(target_num_captions - len(captions))]
-    elif len(captions) > target_num_captions:
-        # 随机选择描述
-        captions = random.sample(captions, target_num_captions)
 
     # 分割并处理每个描述
     for caption in captions:
         split_captions = [caption.strip() for caption in caption.split('.') if caption.strip()]
+        
+
+        if len(split_captions) < target_num_captions:
+        # 复制描述
+            split_captions += [random.choice(split_captions) for _ in range(target_num_captions - len(split_captions))]
+        elif len(split_captions) > target_num_captions:
+        # 随机选择描述
+            split_captions = random.sample(split_captions, target_num_captions)
+
+        # print (split_captions)
+        # print("**************")
+
         for split_caption in split_captions:
             transformed_data["CAPTIONS"].append([split_caption])
 
