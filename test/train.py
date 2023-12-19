@@ -15,10 +15,6 @@ from Loss_opt import PackedCrossEntropyLoss,get_optimizer
 from eval import evaluate
 
 
-
-
-
-
 # 设置模型超参数和辅助变量
 config = Namespace(
     max_len = 30,
@@ -27,13 +23,13 @@ config = Namespace(
     image_code_dim = 2048,
     word_dim = 512,
     hidden_size = 512,
-    attention_dim = 512,
-    num_layers = 1,
+    attention_dim = 512, 
+    num_layers = 1, 
     encoder_learning_rate = 0.0001,
     decoder_learning_rate = 0.0005,
     num_epochs = 10,
-    grad_clip = 5.0,
-    alpha_weight = 1.0,
+    grad_clip = 5.0, 
+    alpha_weight = 1.0, 
     evaluate_step = 900, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
     best_checkpoint = '../model/ARCTIC/best_flickr8k.ckpt', # 验证集上表现最优的模型的路径
