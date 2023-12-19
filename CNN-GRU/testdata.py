@@ -25,8 +25,8 @@ transformed_data = {"IMAGES": [], "CAPTIONS": []}
 
 # 填充转换后的结构
 for image_name, captions in test_captions_data.items():
-    # 添加图片名称
-    transformed_data["IMAGES"].append(image_name)
+
+    transformed_data["IMAGES"].append(os.path.join(file_path, image_name))
     
     # 确保描述是字符串格式，如果不是，转换为字符串
     if not isinstance(captions, str):
@@ -52,7 +52,6 @@ def process_punctuation(text):
     return processed_text
 
 
-
 # 提取 .json 中的所有描述
 all_test_captions = [caption for image, caption in test_captions_data.items()]
 all_train_captions =[caption for image, caption in train_captions_data.items()] 
@@ -74,18 +73,33 @@ special_tokens = ["<pad>", "<unk>", "<start>", "<end>"]
 vocab_combined = special_tokens + vocab_combined
 
 # 转换为 {word: index} 形式的词典
-word_to_index_combined = {word: index for index, word in enumerate(vocab_combined)}
+word_to_index_combined = {word: index+1 for index, word in enumerate(vocab_combined)}
 
-# 展示新词典的前几个条目
-print(list(itertools.islice(word_to_index_combined.items(), 10)))
+# print(list(itertools.islice(word_to_index_combined.items(), 10)))
 
 with open(vocab_path, 'w') as fw:
         json.dump(word_to_index_combined, fw)
 
-# 展示转换后结构的前几个条目以确认转换正确
-# sample_transformed_data = {
-#     "IMAGES": transformed_data["IMAGES"][:2],
-#     "CAPTIONS": transformed_data["CAPTIONS"][:10]  # 展示前10个描述
-# }
 
-# print(sample_transformed_data)
+unk_index = word_to_index_combined["<unk>"]
+transformed_data_with_indices = {"IMAGES": transformed_data["IMAGES"], "CAPTIONS": []}
+
+for caption_list in transformed_data["CAPTIONS"]:
+    # 检查 caption_list 是否为非空列表
+    if caption_list:
+        caption = caption_list[0]
+        # 分割描述为单词
+        words = caption.split()
+        # 转换单词为索引
+        caption_indices = [word_to_index_combined.get(word, unk_index) for word in words]
+        # 添加转换后的描述到新结构中
+        transformed_data_with_indices["CAPTIONS"].append(caption_indices)
+
+
+#展示转换后结构的前几个条目以确认转换正确
+sample_transformed_data = {
+    "IMAGES": transformed_data_with_indices["IMAGES"][:2],
+    "CAPTIONS": transformed_data_with_indices["CAPTIONS"][:10]  # 展示前10个描述
+}
+
+print(sample_transformed_data)
