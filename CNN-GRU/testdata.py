@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import re
 
 from collections import Counter
 import itertools
@@ -8,7 +9,7 @@ import itertools
 
 captions_per_image = 5
 
-file_path = "../data/cloth/test_captions.json"
+file_path = "../data/cloth"
 image_path = "../data/cloth/images"
 vocab_path = "../data/cloth/vocab.json"
 
@@ -72,20 +73,33 @@ vocab_path = "../data/cloth/vocab.json"
 #         json.dump(word_to_index, fw)
 
 
-# 重新加载 test_captions.json 文件
-with open(file_path, 'r') as file:
-    test_captions_data = json.load(file)
 
-# 提取 test_captions.json 中的所有描述
+# 定义一个函数来清理文本，移除逗号
+def clean_text(text):
+    # 移除逗号并返回清理后的文本
+    return re.sub(r',', '', text)
+
+def process_punctuation(text):
+    # 在逗号和句号前添加空格
+    processed_text = re.sub(r',', ' ,', text)
+    processed_text = re.sub(r'\.', ' .', processed_text)
+    return processed_text
+
+with open(os.path.join(file_path, 'test_captions.json'), 'r') as file1:
+    test_captions_data = json.load(file1)
+
+with open(os.path.join(file_path, 'train_captions.json'), 'r') as file2:
+    train_captions_data = json.load(file2)
+
+# 提取 .json 中的所有描述
 all_test_captions = [caption for image, caption in test_captions_data.items()]
-
-# 模拟 train_captions.json 中的描述（假设结构相同）
-# 在这个示例中，我们简单地复制 test_captions.json 的内容来模拟更大的数据集
-all_train_captions = all_test_captions * 2  # 假设 train_captions 是 test_captions 的两倍
+all_train_captions =[caption for image, caption in train_captions_data.items()] 
 
 # 合并两个文件中的描述，并分割为单词
 all_captions_combined = all_test_captions + all_train_captions
-all_words_combined = " ".join(all_captions_combined).split()
+processed_captions_combined = [process_punctuation(caption) for caption in all_captions_combined]
+all_words_combined = " ".join(processed_captions_combined).split()
+# print(all_words_combined)
 
 # 统计词频
 word_counts_combined = Counter(all_words_combined)
@@ -101,14 +115,15 @@ vocab_combined = special_tokens + vocab_combined
 word_to_index_combined = {word: index for index, word in enumerate(vocab_combined)}
 
 # 展示新词典的前几个条目
-list(itertools.islice(word_to_index_combined.items(), 10))
+print(list(itertools.islice(word_to_index_combined.items(), 10)))
 
-
+with open(vocab_path, 'w') as fw:
+        json.dump(word_to_index_combined, fw)
 
 # 展示转换后结构的前几个条目以确认转换正确
-sample_transformed_data = {
-    "IMAGES": transformed_data["IMAGES"][:2],
-    "CAPTIONS": transformed_data["CAPTIONS"][:10]  # 展示前10个描述
-}
+# sample_transformed_data = {
+#     "IMAGES": transformed_data["IMAGES"][:2],
+#     "CAPTIONS": transformed_data["CAPTIONS"][:10]  # 展示前10个描述
+# }
 
 # print(sample_transformed_data)
