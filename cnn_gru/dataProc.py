@@ -17,7 +17,8 @@ def create_dataset(file_path,vocab_path,image_path):
         """
 
         file_name = f'{dataset_type}_captions.json'
-        print(file_name)
+        # print(file_name)
+        print("载入数据集:",file_name)
         with open(os.path.join(file_path, file_name), 'r') as file:
             captions_data = json.load(file)
 
@@ -122,26 +123,29 @@ def create_dataset(file_path,vocab_path,image_path):
             json.dump(data, fw)
 
 
-    def split_data_for_validation(transformed_data, validation_ratio=0.1):
+    def split_data_for_validation(transformed_data, validation_ratio=0.1,num_captions_per_image = 5):
         """
         从训练集中随机抽取一部分数据作为验证集。
         """
-        total_data_len = len(transformed_data["IMAGES"])
-        val_size = int(total_data_len * validation_ratio)
+        # 按图像分组数据
+        grouped_data = [{"IMAGE": transformed_data["IMAGES"][i // num_captions_per_image], 
+                         "CAPTIONS": transformed_data["CAPTIONS"][i:i + num_captions_per_image]} 
+                        for i in range(0, len(transformed_data["CAPTIONS"]), num_captions_per_image)]
 
-        combined_data = list(zip(transformed_data["IMAGES"], transformed_data["CAPTIONS"]))
-        random.shuffle(combined_data)
+        # 随机打乱并分割数据
+        random.shuffle(grouped_data)
+        split_index = int(len(grouped_data) * validation_ratio)
 
         val_data = {"IMAGES": [], "CAPTIONS": []}
         train_data = {"IMAGES": [], "CAPTIONS": []}
 
-        for i, (image, caption) in enumerate(combined_data):
-            if i < val_size:
-                val_data["IMAGES"].append(image)
-                val_data["CAPTIONS"].append(caption)
-            else:
-                train_data["IMAGES"].append(image)
-                train_data["CAPTIONS"].append(caption)
+        for group in grouped_data[:split_index]:
+            val_data["IMAGES"].extend([group["IMAGE"]] * num_captions_per_image)
+            val_data["CAPTIONS"].extend(group["CAPTIONS"])
+
+        for group in grouped_data[split_index:]:
+            train_data["IMAGES"].extend([group["IMAGE"]] * num_captions_per_image)
+            train_data["CAPTIONS"].extend(group["CAPTIONS"])
 
         return train_data, val_data
     
