@@ -18,7 +18,7 @@ def create_dataset(file_path,vocab_path,image_path):
 
         file_name = f'{dataset_type}_captions.json'
         # print(file_name)
-        print("载入数据集:",file_name)
+        # print("载入数据集:",file_name)
         with open(os.path.join(file_path, file_name), 'r') as file:
             captions_data = json.load(file)
 

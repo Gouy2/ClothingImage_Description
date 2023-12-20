@@ -41,7 +41,7 @@ config = Namespace(
 
 def main():
     # 设置GPU信息
-    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '2'
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     print(device)
 
