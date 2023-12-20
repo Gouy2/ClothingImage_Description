@@ -15,18 +15,16 @@ class ImageTextDataset(Dataset):
     PyTorch数据类，用于PyTorch DataLoader来按批次产生数据
     """
 
-    def __init__(self, dataset_path, vocab_path, split, captions_per_image=5, max_len=30, transform=None):
+    def __init__(self, dataset_path, vocab_path, captions_per_image=5, max_len=30, transform=None):
         """
         参数：
             dataset_path：json格式数据文件路径
             vocab_path：json格式词典文件路径
-            split：train、val、test
             captions_per_image：每张图片对应的文本描述数
             max_len：文本描述包含的最大单词数
             transform: 图像预处理方法
         """
-        self.split = split
-        assert self.split in {'train','test'}
+
         self.cpi = captions_per_image
         self.max_len = max_len
 
@@ -60,24 +58,25 @@ class ImageTextDataset(Dataset):
     
 def mktrainval(data_dir, vocab_path, batch_size, workers=4):
     train_tx = transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomCrop(224),
+        transforms.Resize(224),
+        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+        # transforms.RandomCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     val_tx = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.Resize(224),
+        # transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     
     train_set = ImageTextDataset(os.path.join(data_dir, 'train_data.json'), 
-                                 vocab_path, 'train',  transform=train_tx)
+                                 vocab_path,  transform=train_tx)
     valid_set = ImageTextDataset(os.path.join(data_dir, 'val_data.json'), 
-                                 vocab_path, 'val', transform=val_tx)
+                                 vocab_path,  transform=val_tx)
     test_set = ImageTextDataset(os.path.join(data_dir, 'test_data.json'), 
-                                 vocab_path, 'test', transform=val_tx)
+                                 vocab_path,  transform=val_tx)
 
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
