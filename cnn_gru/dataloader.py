@@ -26,35 +26,7 @@ class ImageTextDataset(Dataset):
         """
 
         self.cpi = captions_per_image
-        self.max_len = max_len
-
-        # 载入数据集
-        with open(dataset_path, 'r') as f:
-            self.data = json.load(f)
-        # 载入词典
-        with open(vocab_path, 'r') as f:
-            self.vocab = json.load(f)
-
-        # PyTorch图像预处理流程
-        self.transform = transform
-
-        # Total number of datapoints
-        self.dataset_size = len(self.data['CAPTIONS'])
-
-    def __getitem__(self, i):
-        # 第i个文本描述对应第(i // captions_per_image)张图片
-        img = Image.open(self.data['IMAGES'][i // self.cpi]).convert('RGB')
-        if self.transform is not None:
-            img = self.transform(img)
-
-        caplen = len(self.data['CAPTIONS'][i])
-        caption = torch.LongTensor(self.data['CAPTIONS'][i]+ [self.vocab['<pad>']] * (self.max_len + 2 - caplen)) 
-        
-        return img, caption, caplen
-        
-
-    def __len__(self):
-        return self.dataset_size
+        self.max_len = max_len 
     
 def mktrainval(data_dir, vocab_path, batch_size, workers=0):
     train_tx = transforms.Compose([
@@ -87,11 +59,14 @@ def mktrainval(data_dir, vocab_path, batch_size, workers=0):
     test_loader = torch.utils.data.DataLoader(
         test_set, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, drop_last=False)
 
+
+    print(len(train_loader), len(valid_loader), len(test_loader))
+
     return train_loader, valid_loader, test_loader   
 
 
-# data_dir = '../data/cloth/'
-# vocab_path = '../data/cloth/vocab.json'
-# image_path = "../data/cloth/images"
+data_dir = '../data/cloth/'
+vocab_path = '../data/cloth/vocab.json'
+image_path = "../data/cloth/images"
 
-# mktrainval(data_dir, vocab_path, 32, workers=4)
+mktrainval(data_dir, vocab_path, 64, workers=4)

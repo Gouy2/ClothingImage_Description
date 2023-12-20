@@ -149,13 +149,21 @@ def create_dataset(file_path,vocab_path,image_path):
 
         return train_data, val_data
     
+    
+    
+    with open(os.path.join(file_path, "test_captions.json"), 'r') as file:
+        test_data = json.load(file)
+    
+    with open(os.path.join(file_path, "train_captions.json"), 'r') as file:
+        train_data = json.load(file)
+
 
     # 处理 test_captions_data 和 train_captions_data
     transformed_test_data = process_captions("test")
     transformed_train_data = process_captions("train")
 
     # 处理词典
-    word_to_index_combined, unk_index = process_vocab(transformed_test_data, transformed_train_data, os.path.join(file_path, 'vocab.json'))
+    word_to_index_combined, unk_index = process_vocab(test_data, train_data, os.path.join(file_path, 'vocab.json'))
 
     # 转换为索引
     transformed_test_data_with_indices = convert_captions_to_indices(transformed_test_data, word_to_index_combined, unk_index)
