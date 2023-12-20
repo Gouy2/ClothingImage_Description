@@ -121,6 +121,31 @@ def create_dataset(file_path,vocab_path,image_path):
         with open(file_path, 'w') as fw:
             json.dump(data, fw)
 
+
+    def split_data_for_validation(transformed_data, validation_ratio=0.1):
+        """
+        从训练集中随机抽取一部分数据作为验证集。
+        """
+        total_data_len = len(transformed_data["IMAGES"])
+        val_size = int(total_data_len * validation_ratio)
+
+        combined_data = list(zip(transformed_data["IMAGES"], transformed_data["CAPTIONS"]))
+        random.shuffle(combined_data)
+
+        val_data = {"IMAGES": [], "CAPTIONS": []}
+        train_data = {"IMAGES": [], "CAPTIONS": []}
+
+        for i, (image, caption) in enumerate(combined_data):
+            if i < val_size:
+                val_data["IMAGES"].append(image)
+                val_data["CAPTIONS"].append(caption)
+            else:
+                train_data["IMAGES"].append(image)
+                train_data["CAPTIONS"].append(caption)
+
+        return train_data, val_data
+    
+
     # 处理 test_captions_data 和 train_captions_data
     transformed_test_data = process_captions("test")
     transformed_train_data = process_captions("train")
@@ -128,17 +153,19 @@ def create_dataset(file_path,vocab_path,image_path):
     # 处理词典
     word_to_index_combined, unk_index = process_vocab(transformed_test_data, transformed_train_data, os.path.join(file_path, 'vocab.json'))
 
-
-
     # 转换为索引
     transformed_test_data_with_indices = convert_captions_to_indices(transformed_test_data, word_to_index_combined, unk_index)
     transformed_train_data_with_indices = convert_captions_to_indices(transformed_train_data, word_to_index_combined, unk_index)
 
+    final_train_data, val_data = split_data_for_validation(transformed_train_data_with_indices)
+
     # 保存为 JSON
     save_data_to_json(transformed_test_data_with_indices, os.path.join(file_path, 'test_data.json'))
-    save_data_to_json(transformed_train_data_with_indices, os.path.join(file_path, 'train_data.json'))
+    save_data_to_json(final_train_data, os.path.join(file_path, 'train_data.json'))
+    save_data_to_json(val_data, os.path.join(file_path, 'val_data.json'))
 
-# create_dataset(file_path,vocab_path,image_path)
+
+create_dataset(file_path,vocab_path,image_path)
 
 
 
