@@ -1,0 +1,2 @@
+epoch 1, step 100: loss=2.27 
+epoch 1, step 200: loss=1.85 
