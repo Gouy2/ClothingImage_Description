@@ -56,17 +56,17 @@ class ImageTextDataset(Dataset):
     def __len__(self):
         return self.dataset_size
     
-def mktrainval(data_dir, vocab_path, batch_size, workers=4):
+def mktrainval(data_dir, vocab_path, batch_size, workers=0):
     train_tx = transforms.Compose([
-        transforms.Resize(224),
+        transforms.Resize(256),
         transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
-        # transforms.RandomCrop(224),
+        transforms.RandomCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     val_tx = transforms.Compose([
-        transforms.Resize(224),
-        # transforms.CenterCrop(224),
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
@@ -88,3 +88,10 @@ def mktrainval(data_dir, vocab_path, batch_size, workers=4):
         test_set, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, drop_last=False)
 
     return train_loader, valid_loader, test_loader   
+
+
+# data_dir = '../data/cloth/'
+# vocab_path = '../data/cloth/vocab.json'
+# image_path = "../data/cloth/images"
+
+# mktrainval(data_dir, vocab_path, 32, workers=4)

@@ -51,7 +51,7 @@ def main():
     image_path = "../data/cloth/images"
 
     #加载数据
-    create_dataset(data_dir, image_path, vocab_path)
+    create_dataset(data_dir, vocab_path ,image_path)
 
     train_loader, valid_loader, test_loader = mktrainval(data_dir, vocab_path, config.batch_size)
 
