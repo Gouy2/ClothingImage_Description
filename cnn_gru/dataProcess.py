@@ -140,11 +140,11 @@ def create_dataset(file_path,vocab_path,image_path):
         train_data = {"IMAGES": [], "CAPTIONS": []}
 
         for group in grouped_data[:split_index]:
-            val_data["IMAGES"].extend([group["IMAGE"]] * num_captions_per_image)
+            val_data["IMAGES"].extend([group["IMAGE"]])
             val_data["CAPTIONS"].extend(group["CAPTIONS"])
 
         for group in grouped_data[split_index:]:
-            train_data["IMAGES"].extend([group["IMAGE"]] * num_captions_per_image)
+            train_data["IMAGES"].extend([group["IMAGE"]])
             train_data["CAPTIONS"].extend(group["CAPTIONS"])
 
         return train_data, val_data
