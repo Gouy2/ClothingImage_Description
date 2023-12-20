@@ -7,11 +7,9 @@ from arctic import ARCTIC
 
 vocab_path = '../data/cloth/vocab.json'
 
-best_checkpoint = './model/best_params.ckpt', # 验证集上表现最优的模型的路径
-last_checkpoint = './model/last_params.ckpt', # 训练完成时的模型的路径
+checkpoint = './model/best_model.ckpt' # 验证集上表现最优的模型的路径
+# checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
 
-checkpoint = best_checkpoint
-# checkpoint = last_checkpoint
 
 # 加载模型
 checkpoint = torch.load(checkpoint)
@@ -51,6 +49,6 @@ def generate_description(image_path, model, vocab):
     return description
 
 # 使用模型
-image_path = 'path_to_your_image.jpg'
+image_path = '../data/cloth/images/WOMEN-Tees_Tanks-id_00003687-13_4_full.jpg'
 description = generate_description(image_path, model, vocab)
 print(description)
