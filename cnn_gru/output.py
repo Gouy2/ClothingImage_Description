@@ -58,7 +58,7 @@ def generate_caption(image_path, model, transform):
 
     # 生成描述
     with torch.no_grad():
-        caption = model.generate_by_beamsearch(image, beam_k=5, max_len=30)
+        caption = model.generate_by_beamsearch(image, beam_k=5, max_len=120)
 
     return caption
 
