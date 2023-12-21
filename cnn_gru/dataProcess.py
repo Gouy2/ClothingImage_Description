@@ -22,6 +22,9 @@ def create_dataset(file_path,vocab_path,image_path):
         with open(os.path.join(file_path, file_name), 'r') as file:
             captions_data = json.load(file)
 
+        with open(os.path.join(vocab_path), 'r') as file:
+            vocab_set = set(json.load(file).keys())
+
         transformed_data = {"IMAGES": [], "CAPTIONS": []}
         for image_name, captions in captions_data.items():
             transformed_data["IMAGES"].append(os.path.join(image_path, image_name))
@@ -31,6 +34,8 @@ def create_dataset(file_path,vocab_path,image_path):
 
             for caption in captions:
                 split_captions = [caption.strip() for caption in caption.split('.') if caption.strip()]
+                
+
 
                 if len(split_captions) < target_num_captions:
                     split_captions += [random.choice(split_captions) for _ in range(target_num_captions - len(split_captions))]
@@ -111,7 +116,7 @@ def create_dataset(file_path,vocab_path,image_path):
             if caption_list:
                 caption = caption_list[0]
                 words = caption.split()
-                caption_indices = [word_to_index.get(word, unk_index) for word in words]
+                caption_indices =  [word_to_index['<start>']] + [word_to_index.get(word, unk_index) for word in words]+ [word_to_index['<end>']]
                 transformed_data_with_indices["CAPTIONS"].append(caption_indices)
         return transformed_data_with_indices
 
