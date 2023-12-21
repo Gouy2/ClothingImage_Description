@@ -61,6 +61,7 @@ class ImageCaptioningApp(QWidget):
 
         # 创建和设置描述显示标签
         self.caption_label = QLabel('Caption will appear here...', self)
+        self.caption_label.setObjectName("DescriptionLabel")  # 设置一个唯一的对象名称
         self.caption_label.setAlignment(Qt.AlignCenter)
         self.caption_label.setWordWrap(True)
         main_layout.addWidget(self.caption_label)
@@ -78,29 +79,34 @@ class ImageCaptioningApp(QWidget):
                 font-family: 'Arial';
             }
             QLabel {
-                font-size: 14px;
+                /* 移除font-size，使其不影响所有QLabel */
+                color: #333;
             }
             QPushButton {
                 background-color: #5c5c5c;
                 color: white;
                 border-radius: 10px;
                 padding: 12px 20px;
-                font-size: 16px;
+                font-size: 16px;  /* 仅设置按钮内的文字大小 */
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #0056b3;
+                background-color: #6c6c6c;
             }
             #ImageLabel, #CaptionLabel {
                 border: 2px solid #5c5c5c;
                 border-radius: 10px;
             }
-            
+            #DescriptionLabel {  /* 仅针对描述标签的样式 */
+                font-size: 18px;  /* 增大描述标签的字体大小 */
+                padding: 10px;  /* 增加描述标签的内边距 */
+                color: #444;
+            }
         """)
 
         # 设置图片和描述标签的特定样式
-        self.image_label.setObjectName("ImageLabel")  # 设置对象名称以应用样式
-        self.caption_label.setObjectName("CaptionLabel")  # 设置对象名称以应用样式
+        self.image_label.setObjectName("ImageLabel")
+        self.caption_label.setObjectName("DescriptionLabel")
         
         
 
