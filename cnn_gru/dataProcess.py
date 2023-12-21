@@ -11,7 +11,7 @@ image_path = "../data/cloth/images"
 
 def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
     def process_captions(dataset_type,
-                        target_num_captions = 5):
+                        ):
         """
         处理每张图片的描述，确保每张图片对应五个描述。
         """
@@ -27,22 +27,30 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
         for image_name, captions in captions_data.items():
             transformed_data["IMAGES"].append(os.path.join(image_path, image_name))
             
+            captions = process_punctuation(captions)
+
             if not isinstance(captions, list):
                 captions = [captions]
 
-            for caption in captions:
-                split_captions = [caption.strip() for caption in caption.split('.') if caption.strip()]
+
+             
+            transformed_data["CAPTIONS"].append(captions)
+
+            # for caption in captions:
+            #     split_captions = [caption.strip() for caption in caption.split('.') if caption.strip()]
                 
 
 
-                if len(split_captions) < target_num_captions:
-                    split_captions += [random.choice(split_captions) for _ in range(target_num_captions - len(split_captions))]
-                elif len(split_captions) > target_num_captions:
-                    split_captions = random.sample(split_captions, target_num_captions)
+            #     if len(split_captions) < target_num_captions:
+            #         split_captions += [random.choice(split_captions) for _ in range(target_num_captions - len(split_captions))]
+            #     elif len(split_captions) > target_num_captions:
+            #         split_captions = random.sample(split_captions, target_num_captions)
 
-                for split_caption in split_captions:
-                    transformed_data["CAPTIONS"].append([split_caption])
+            #     for split_caption in split_captions:
+            #         transformed_data["CAPTIONS"].append([split_caption])
         
+        # print(transformed_data["CAPTIONS"][0])
+
         return transformed_data
 
     def process_punctuation(text):
@@ -126,7 +134,11 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
         #     if len(transformed_data_with_indices["CAPTIONS"][i]) >=  20 :
         #         print(transformed_data_with_indices["CAPTIONS"][i] )
        
-        assert len( transformed_data_with_indices["IMAGES"]) * target_num_captions  == len(transformed_data_with_indices["CAPTIONS"])
+        assert len( transformed_data_with_indices["IMAGES"])  == len(transformed_data_with_indices["CAPTIONS"])
+        
+        # print(transformed_data["CAPTIONS"][0])
+        # print(transformed_data_with_indices["CAPTIONS"][0])
+
         return transformed_data_with_indices
 
     def save_data_to_json(data, file_path):
@@ -142,10 +154,14 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
         从训练集中随机抽取一部分数据作为验证集。
         """
         # 按图像分组数据
-        grouped_data = [{"IMAGE": transformed_data["IMAGES"][i // num_captions_per_image], 
-                         "CAPTIONS": transformed_data["CAPTIONS"][i:i + num_captions_per_image]} 
-                        for i in range(0, len(transformed_data["CAPTIONS"]), num_captions_per_image)]
-
+        # grouped_data = [{"IMAGE": transformed_data["IMAGES"][i // num_captions_per_image], 
+        #                  "CAPTIONS": transformed_data["CAPTIONS"][i:i + num_captions_per_image]} 
+        #                 for i in range(0, len(transformed_data["CAPTIONS"]), num_captions_per_image)]
+        
+        grouped_data = [{"IMAGE": transformed_data["IMAGES"][i], 
+                         "CAPTIONS": transformed_data["CAPTIONS"][i]} 
+                        for i in range(0, len(transformed_data["CAPTIONS"]))]
+        # print(grouped_data[0:2])
         # 随机打乱并分割数据
         random.shuffle(grouped_data)
         split_index = int(len(grouped_data) * validation_ratio)
@@ -155,11 +171,16 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
 
         for group in grouped_data[:split_index]:
             val_data["IMAGES"].extend([group["IMAGE"]])
-            val_data["CAPTIONS"].extend(group["CAPTIONS"])
+            val_data["CAPTIONS"].extend([group["CAPTIONS"]])
 
         for group in grouped_data[split_index:]:
             train_data["IMAGES"].extend([group["IMAGE"]])
-            train_data["CAPTIONS"].extend(group["CAPTIONS"])
+            train_data["CAPTIONS"].extend([group["CAPTIONS"]])
+
+        # print(train_data["IMAGES"][0])
+        # print(train_data["CAPTIONS"][0])
+        # print(val_data["IMAGES"][0])
+        # print(val_data["CAPTIONS"][0])
 
         return train_data, val_data
     
@@ -177,7 +198,7 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
     transformed_train_data = process_captions("train")
 
     # 处理词典
-    word_to_index_combined, unk_index = process_vocab(transformed_test_data, transformed_train_data, os.path.join(file_path, 'vocab.json'))
+    word_to_index_combined, unk_index = process_vocab(test_data, train_data, os.path.join(file_path, 'vocab.json'))
 
     # 转换为索引
     transformed_test_data_with_indices = convert_captions_to_indices(transformed_test_data, word_to_index_combined, unk_index)
@@ -190,8 +211,13 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
     save_data_to_json(final_train_data, os.path.join(file_path, 'train_data.json'))
     save_data_to_json(val_data, os.path.join(file_path, 'val_data.json'))
 
+    # x=input()
+    # print(process_punctuation(x))
 
-# create_dataset(file_path,vocab_path,image_path)
+if __name__ == '__main__':
+    create_dataset(file_path,vocab_path,image_path)
+    
+
 
 
 

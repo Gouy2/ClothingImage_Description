@@ -18,9 +18,9 @@ from dataProcess import create_dataset
 
 # 设置模型超参数和辅助变量
 config = Namespace(
-    max_len = 30,
+    max_len = 120,
     captions_per_image = 5,
-    batch_size = 32,
+    batch_size = 16,
     image_code_dim = 2048,
     word_dim = 512,
     hidden_size = 512,
@@ -31,7 +31,7 @@ config = Namespace(
     num_epochs = 10,
     grad_clip = 5.0, 
     alpha_weight = 1.0, 
-    evaluate_step = 700, # 每隔多少步在验证集上测试一次
+    evaluate_step = 250, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
     last_checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
@@ -43,7 +43,7 @@ def main():
     # 设置GPU信息
     
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    # # torch.backends.cudnn.enabled = False
+    torch.backends.cudnn.enabled = False
     # torch.backends.cudnn.enabled = True
     # torch.backends.cudnn.benchmark = True
     # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"

@@ -89,6 +89,8 @@ def indices_to_sentence_nested(indices_list, vocab):
 
 
 # 使用示例
-caption = generate_caption('../data/cloth/test.jpg', model, transform)
-caption_words = indices_to_sentence_nested(caption, vocab)
-print("Generated Caption:", caption_words)
+if __name__ == '__main__':
+    caption = generate_caption('../data/cloth/test.jpg', model, transform)
+    caption_words = indices_to_sentence_nested(caption, vocab)
+    print("Generated Caption:", caption_words)
+
