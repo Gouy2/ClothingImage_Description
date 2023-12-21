@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 
 
-
+# 交叉熵损失函数
 class PackedCrossEntropyLoss(nn.Module):
     def __init__(self):
         super(PackedCrossEntropyLoss, self).__init__()
@@ -21,12 +21,14 @@ class PackedCrossEntropyLoss(nn.Module):
         return self.loss_fn(predictions, targets)
         
 
+# 优化器
 def get_optimizer(model, config):
     return torch.optim.Adam([{"params": filter(lambda p: p.requires_grad, model.encoder.parameters()), 
                               "lr": config.encoder_learning_rate},
                              {"params": filter(lambda p: p.requires_grad, model.decoder.parameters()), 
                               "lr": config.decoder_learning_rate}])
-    
+
+# 调整学习速率
 def adjust_learning_rate(optimizer, epoch, config):
     """
         每隔lr_update个轮次，学习速率减小至当前十分之一，

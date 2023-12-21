@@ -9,14 +9,11 @@ import torchvision.transforms as transforms
 from argparse import Namespace
 
 # from test import dataLoader,data,gru,Loss_opt,resnet
-from dataLoader import mktrainval
+from dataloader import mktrainval
 from arctic import ARCTIC
-from Loss_opt import PackedCrossEntropyLoss,get_optimizer
+from loss_opt import PackedCrossEntropyLoss,get_optimizer
 from eval import evaluate
-
-
-
-
+from dataProcess import create_dataset
 
 
 # 设置模型超参数和辅助变量
@@ -27,38 +24,55 @@ config = Namespace(
     image_code_dim = 2048,
     word_dim = 512,
     hidden_size = 512,
-    attention_dim = 512,
-    num_layers = 1,
+    attention_dim = 512, 
+    num_layers = 1, 
     encoder_learning_rate = 0.0001,
     decoder_learning_rate = 0.0005,
     num_epochs = 10,
-    grad_clip = 5.0,
-    alpha_weight = 1.0,
-    evaluate_step = 900, # 每隔多少步在验证集上测试一次
+    grad_clip = 5.0, 
+    alpha_weight = 1.0, 
+    evaluate_step = 700, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
-    best_checkpoint = '../model/ARCTIC/best_flickr8k.ckpt', # 验证集上表现最优的模型的路径
-    last_checkpoint = '../model/ARCTIC/last_flickr8k.ckpt', # 训练完成时的模型的路径
+    best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
+    last_checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
     beam_k = 5
 )
 
 
 def main():
     # 设置GPU信息
-    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+    
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # # torch.backends.cudnn.enabled = False
+    # torch.backends.cudnn.enabled = True
+    # torch.backends.cudnn.benchmark = True
+    # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+    # # torch.cuda.device_count()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     print(device)
 
-    # 数据
-    data_dir = '../data/flickr8k/'
-    vocab_path = '../data/flickr8k/vocab.json'
+    # 数据路径
+    data_dir = '../data/cloth/'
+    vocab_path = '../data/cloth/vocab.json'
+    image_path = "../data/cloth/images"
+
+    #加载数据
+    create_dataset(data_dir, vocab_path ,image_path)
+
+    print("数据加载完成")
+
     train_loader, valid_loader, test_loader = mktrainval(data_dir, vocab_path, config.batch_size)
+
+    print("数据集划分完成")
 
     # 模型
     with open(vocab_path, 'r') as f:
         vocab = json.load(f)
 
+
+
     # 随机初始化 或 载入已训练的模型
-    start_epoch = 0
+    start_epoch = 1
     checkpoint = config.checkpoint
     if checkpoint is None:
         model = ARCTIC(config.image_code_dim, vocab, config.word_dim, config.attention_dim, config.hidden_size, config.num_layers)
@@ -66,6 +80,8 @@ def main():
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch'] + 1
         model = checkpoint['model']
+
+    print("模型加载完成")
 
     # 优化器
     optimizer = get_optimizer(model, config)
@@ -90,6 +106,7 @@ def main():
             imgs = imgs.to(device)
             caps = caps.to(device)
             caplens = caplens.to(device)
+
 
             # 2. 前馈计算
             predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
@@ -119,22 +136,31 @@ def main():
                     'model': model,
                     'optimizer': optimizer
                     }
+            
             if (i+1) % config.evaluate_step == 0:
                 bleu_score = evaluate(valid_loader, model, config)
+
                 # 5. 选择模型
                 if best_res < bleu_score:
                     best_res = bleu_score
                     torch.save(state, config.best_checkpoint)
+
                 torch.save(state, config.last_checkpoint)
+
                 fw.write('Validation@epoch, %d, step, %d, BLEU-4=%.2f\n' % 
                     (epoch, i+1, bleu_score))
                 fw.flush()
                 print('Validation@epoch, %d, step, %d, BLEU-4=%.2f' % 
                     (epoch, i+1, bleu_score))
+                
     checkpoint = torch.load(config.best_checkpoint)
+
     model = checkpoint['model']
+
     bleu_score = evaluate(test_loader, model, config)
+
     print("Evaluate on the test set with the model that has the best performance on the validation set")
+
     print('Epoch: %d, BLEU-4=%.2f' % 
         (checkpoint['epoch'], bleu_score))
     fw.write('Epoch: %d, BLEU-4=%.2f' % 

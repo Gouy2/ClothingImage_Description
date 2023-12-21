@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 # import gru,resnet
-from gru import AttentionDecoder
-from resnet import ImageEncoder
+from model import AttentionDecoder,ImageEncoder
 
 
 
