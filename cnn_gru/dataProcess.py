@@ -22,8 +22,6 @@ def create_dataset(file_path,vocab_path,image_path):
         with open(os.path.join(file_path, file_name), 'r') as file:
             captions_data = json.load(file)
 
-        with open(os.path.join(vocab_path), 'r') as file:
-            vocab_set = set(json.load(file).keys())
 
         transformed_data = {"IMAGES": [], "CAPTIONS": []}
         for image_name, captions in captions_data.items():
