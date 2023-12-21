@@ -25,9 +25,13 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+# trained_model = './model/best_model.ckpt'
+trained_model = './model/last_model.ckpt'
+
+
 # 加载训练好的模型
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load('./model/best_model.ckpt', map_location=device)
+checkpoint = torch.load(trained_model, map_location=device)
 model = checkpoint['model']
 
 model = model.to(device)
