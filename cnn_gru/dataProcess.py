@@ -9,7 +9,7 @@ file_path = "../data/cloth"
 vocab_path = "../data/cloth/vocab.json"
 image_path = "../data/cloth/images"
 
-def create_dataset(file_path,vocab_path,image_path):
+def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
     def process_captions(dataset_type,
                         target_num_captions = 5):
         """
@@ -114,8 +114,19 @@ def create_dataset(file_path,vocab_path,image_path):
             if caption_list:
                 caption = caption_list[0]
                 words = caption.split()
+                
                 caption_indices =  [word_to_index['<start>']] + [word_to_index.get(word, unk_index) for word in words]+ [word_to_index['<end>']]
+                # caption_indices =  [word_to_index.get(word, unk_index) for word in words]
                 transformed_data_with_indices["CAPTIONS"].append(caption_indices)
+
+        # print(len(transformed_data_with_indices["IMAGES"]))
+        # print(len(transformed_data_with_indices["CAPTIONS"]))
+        # for i in range (len(transformed_data_with_indices["CAPTIONS"])):
+             
+        #     if len(transformed_data_with_indices["CAPTIONS"][i]) >=  20 :
+        #         print(transformed_data_with_indices["CAPTIONS"][i] )
+       
+        assert len( transformed_data_with_indices["IMAGES"]) * target_num_captions  == len(transformed_data_with_indices["CAPTIONS"])
         return transformed_data_with_indices
 
     def save_data_to_json(data, file_path):
@@ -166,7 +177,7 @@ def create_dataset(file_path,vocab_path,image_path):
     transformed_train_data = process_captions("train")
 
     # 处理词典
-    word_to_index_combined, unk_index = process_vocab(test_data, train_data, os.path.join(file_path, 'vocab.json'))
+    word_to_index_combined, unk_index = process_vocab(transformed_test_data, transformed_train_data, os.path.join(file_path, 'vocab.json'))
 
     # 转换为索引
     transformed_test_data_with_indices = convert_captions_to_indices(transformed_test_data, word_to_index_combined, unk_index)
@@ -180,7 +191,7 @@ def create_dataset(file_path,vocab_path,image_path):
     save_data_to_json(val_data, os.path.join(file_path, 'val_data.json'))
 
 
-create_dataset(file_path,vocab_path,image_path)
+# create_dataset(file_path,vocab_path,image_path)
 
 
 
