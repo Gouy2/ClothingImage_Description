@@ -41,7 +41,13 @@ config = Namespace(
 
 def main():
     # 设置GPU信息
+    
     # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # # torch.backends.cudnn.enabled = False
+    # torch.backends.cudnn.enabled = True
+    # torch.backends.cudnn.benchmark = True
+    # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+    # # torch.cuda.device_count()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     print(device)
 
@@ -53,11 +59,17 @@ def main():
     #加载数据
     create_dataset(data_dir, vocab_path ,image_path)
 
+    print("数据加载完成")
+
     train_loader, valid_loader, test_loader = mktrainval(data_dir, vocab_path, config.batch_size)
+
+    print("数据集划分完成")
 
     # 模型
     with open(vocab_path, 'r') as f:
         vocab = json.load(f)
+
+
 
     # 随机初始化 或 载入已训练的模型
     start_epoch = 1
@@ -68,6 +80,8 @@ def main():
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch'] + 1
         model = checkpoint['model']
+
+    print("模型加载完成")
 
     # 优化器
     optimizer = get_optimizer(model, config)
@@ -92,6 +106,7 @@ def main():
             imgs = imgs.to(device)
             caps = caps.to(device)
             caplens = caplens.to(device)
+
 
             # 2. 前馈计算
             predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
