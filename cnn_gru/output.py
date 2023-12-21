@@ -1,9 +1,14 @@
 import torch
+import sys
+import json
 from PIL import Image
 import torchvision.transforms as transforms
+from PyQt5.QtWidgets import QApplication
+
+# from gui import ImageCaptioningApp
 from model import ImageEncoder, AttentionDecoder
 from arctic import ARCTIC
-import json
+
 
 # 加载词汇表
 with open('../data/cloth/vocab.json', 'r') as f:
@@ -98,3 +103,7 @@ if __name__ == '__main__':
     caption_words = indices_to_sentence_nested(caption, vocab)
     print("Generated Caption:", caption_words)
 
+    # app = QApplication(sys.argv)
+    # ex = ImageCaptioningApp(model,vocab,transform)
+    # ex.show()
+    # sys.exit(app.exec_())
