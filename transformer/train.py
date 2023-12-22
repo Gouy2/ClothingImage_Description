@@ -5,29 +5,25 @@ import torch.nn as nn
 from argparse import Namespace
 
 # from test import dataLoader,data,gru,Loss_opt,resnet
-# from dataloader import mktrainval
-# from dataProcess import create_dataset
-
-from arctic import ARCTIC
+from ..module.dataset import create_dataset,mktrainval
 from ..module.loss_opt import PackedCrossEntropyLoss,get_optimizer
 from ..module.eval import evaluate
-from ..module.dataset import create_dataset,mktrainval
-
+from integrate import Transformer
 
 
 # 设置模型超参数和辅助变量
 config = Namespace(
     max_len = 120,
-    captions_per_image = 5,
+    captions_per_image = 1,
     batch_size = 16,
     image_code_dim = 2048,
     word_dim = 512,
-    hidden_size = 512,
-    attention_dim = 512, 
-    num_layers = 1, 
+    num_heads = 8 , #注意力头数
+    num_layers = 6 , #解码器中的层数
+    ff_dim = 2048 , #前馈网络的维度
     encoder_learning_rate = 0.0001,
     decoder_learning_rate = 0.0005,
-    num_epochs = 20,
+    num_epochs = 10,
     grad_clip = 5.0, 
     alpha_weight = 1.0, 
     evaluate_step = 250, # 每隔多少步在验证集上测试一次
@@ -74,7 +70,7 @@ def main():
     start_epoch = 1
     checkpoint = config.checkpoint
     if checkpoint is None:
-        model = ARCTIC(config.image_code_dim, vocab, config.word_dim, config.attention_dim, config.hidden_size, config.num_layers)
+        model = Transformer( vocab, config.word_dim, config.num_heads, config.num_layers, config.ff_dim)
     else:
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch'] + 1
