@@ -4,7 +4,6 @@ import torch.nn as nn
 from model import AttentionDecoder,ImageEncoder
 
 
-
 class ARCTIC(nn.Module):
     def __init__(self, image_code_dim, vocab, word_dim, attention_dim, hidden_size, num_layers):
         super(ARCTIC, self).__init__()

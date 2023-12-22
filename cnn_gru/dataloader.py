@@ -15,7 +15,7 @@ class ImageTextDataset(Dataset):
     PyTorch数据类，用于PyTorch DataLoader来按批次产生数据
     """
 
-    def __init__(self, dataset_path, vocab_path, captions_per_image=5, max_len=30, transform=None):
+    def __init__(self, dataset_path, vocab_path, max_len=120, transform=None):
         """
         参数：
             dataset_path：json格式数据文件路径
@@ -25,8 +25,43 @@ class ImageTextDataset(Dataset):
             transform: 图像预处理方法
         """
 
-        self.cpi = captions_per_image
         self.max_len = max_len 
+
+        # 载入数据集
+        with open(dataset_path, 'r') as f:
+            self.data = json.load(f)
+        # 载入词典
+        with open(vocab_path, 'r') as f:
+            self.vocab = json.load(f)
+
+        # PyTorch图像预处理流程
+        self.transform = transform
+
+        # Total number of datapoints
+        self.dataset_size = len(self.data['IMAGES'])
+
+        # print(len(self.data['IMAGES'])==len(self.data['CAPTIONS']))
+        
+
+    def __getitem__(self, i):
+
+        img = Image.open(self.data['IMAGES'][i]).convert('RGB')
+        if self.transform is not None:
+            img = self.transform(img)
+
+
+        caption = self.data['CAPTIONS'][i]
+        caplen = min(len(caption), self.max_len)  # 限制 caption 的长度
+        caption = caption[:caplen]  # 截断超长的 caption
+        # caplen = len(self.data['CAPTIONS'][i])
+        caption = torch.LongTensor(self.data['CAPTIONS'][i]+ [self.vocab['<pad>']] * (self.max_len + 2 - caplen))
+        # print(caption.size())
+
+        return img, caption, caplen
+        
+
+    def __len__(self):
+        return self.dataset_size
     
 def mktrainval(data_dir, vocab_path, batch_size, workers=0):
     train_tx = transforms.Compose([
@@ -60,13 +95,14 @@ def mktrainval(data_dir, vocab_path, batch_size, workers=0):
         test_set, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, drop_last=False)
 
 
-    print(len(train_loader), len(valid_loader), len(test_loader))
+    # print(len(train_loader), len(valid_loader), len(test_loader))
 
     return train_loader, valid_loader, test_loader   
 
+if __name__ == '__main__':
+    
+    data_dir = '../data/cloth/'
+    vocab_path = '../data/cloth/vocab.json'
+    image_path = "../data/cloth/images"
 
-data_dir = '../data/cloth/'
-vocab_path = '../data/cloth/vocab.json'
-image_path = "../data/cloth/images"
-
-mktrainval(data_dir, vocab_path, 64, workers=4)
+    mktrainval(data_dir, vocab_path, 16, workers=0)
