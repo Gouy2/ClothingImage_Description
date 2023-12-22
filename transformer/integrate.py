@@ -11,12 +11,12 @@ class Transformer(nn.Module):
         self.vocab = vocab
         self.encoder = ViTEncoder()  # ViT 作为编码器
         self.decoder = TransformerDecoder(
-            len(vocab), embed_dim, num_heads, num_layers, ff_dim, dropout
+            vocab, len(vocab), embed_dim, num_heads, num_layers, ff_dim, dropout
         )
 
-    def forward(self, images, captions, cap_lens):
+    def forward(self, images, captions):
         image_code = self.encoder(images)
-        return self.decoder(image_code, captions, cap_lens)
+        return self.decoder(captions, image_code )
     
     def generate_by_beamsearch(self, images, beam_k, max_len):
         vocab_size = len(self.vocab)

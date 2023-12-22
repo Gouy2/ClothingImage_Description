@@ -53,8 +53,9 @@ class PositionalEncoding(nn.Module):
 
 
 class TransformerDecoder(nn.Module):
-    def __init__(self, vocab_size, embed_dim, num_heads, num_layers, ff_dim, dropout=0.1):
+    def __init__(self, vocab,vocab_size, embed_dim, num_heads, num_layers, ff_dim, dropout=0.1):
         super(TransformerDecoder, self).__init__()
+        self.vocab = vocab
         self.embed = nn.Embedding(vocab_size, embed_dim)
         self.pos_encoder = PositionalEncoding(embed_dim, dropout)
         self.layers = nn.ModuleList([TransformerDecoderLayer(embed_dim, num_heads, ff_dim, dropout) for _ in range(num_layers)])
@@ -67,16 +68,27 @@ class TransformerDecoder(nn.Module):
         return mask
 
     def forward(self, captions, memory):
+        # 确保 captions 是二维的，形状为 [batch_size, seq_len]
+        # 假设 <pad> 词在 vocab 中的索引是 pad_token_id
+        pad_token_id = self.vocab['<pad>']  # 根据您的 vocab 获取 <pad> 词的索引
+        tgt_padding_mask = (captions == pad_token_id).transpose(0, 1)
+
+        # Embedding 和 Positional Encoding
         captions = self.embed(captions) * math.sqrt(self.embed.embedding_dim)
         captions = self.pos_encoder(captions)
 
+        # 生成序列掩码
         tgt_mask = self.generate_square_subsequent_mask(captions.size(0)).to(captions.device)
-        tgt_padding_mask = (captions == self.vocab['<pad>']).transpose(0, 1)
-        memory_key_padding_mask = None  # 如果需要，添加适当的 mask
 
+        memory_key_padding_mask = None  # 如有必要，添加合适的掩码
+
+        # 应用 Transformer 层
         for layer in self.layers:
-            captions = layer(captions, memory, tgt_mask=tgt_mask, memory_mask=None, tgt_key_padding_mask=tgt_padding_mask, memory_key_padding_mask=memory_key_padding_mask)
+            captions = layer(captions, memory, tgt_mask=tgt_mask, memory_mask=None,
+                             tgt_key_padding_mask=tgt_padding_mask,
+                             memory_key_padding_mask=memory_key_padding_mask)
 
         captions = self.norm(captions)
         output = self.fc_out(captions)
         return output
+

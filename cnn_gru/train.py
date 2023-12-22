@@ -3,22 +3,24 @@ import json
 import torch
 import torch.nn as nn
 from argparse import Namespace
-
+import sys
 # from test import dataLoader,data,gru,Loss_opt,resnet
 # from dataloader import mktrainval
 # from dataProcess import create_dataset
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 from arctic import ARCTIC
-from ..module.loss_opt import PackedCrossEntropyLoss,get_optimizer
-from ..module.eval import evaluate
-from ..module.dataset import create_dataset,mktrainval
+from module.loss_opt import PackedCrossEntropyLoss,get_optimizer
+from module.eval import evaluate
+from module.dataset import create_dataset,mktrainval
 
 
 
 # 设置模型超参数和辅助变量
 config = Namespace(
     max_len = 120,
-    captions_per_image = 5,
+    captions_per_image = 1,
     batch_size = 16,
     image_code_dim = 2048,
     word_dim = 512,

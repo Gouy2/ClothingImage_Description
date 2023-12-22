@@ -2,12 +2,14 @@ import os
 import json
 import torch
 import torch.nn as nn
+import sys
 from argparse import Namespace
 
-# from test import dataLoader,data,gru,Loss_opt,resnet
-from ..module.dataset import create_dataset,mktrainval
-from ..module.loss_opt import PackedCrossEntropyLoss,get_optimizer
-from ..module.eval import evaluate
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from module.dataset import create_dataset,mktrainval
+from module.loss_opt import PackedCrossEntropyLoss,get_optimizer
+from module.eval import evaluate
 from integrate import Transformer
 
 
@@ -27,7 +29,8 @@ config = Namespace(
     grad_clip = 5.0, 
     alpha_weight = 1.0, 
     evaluate_step = 250, # 每隔多少步在验证集上测试一次
-    checkpoint = './model/ckpt_model.ckpt', # 如果不为None，则利用该变量路径的模型继续训练
+    checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
+    # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
     last_checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
     beam_k = 5
@@ -104,21 +107,23 @@ def main():
 
 
             # 2. 前馈计算
-            predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
+            # 注意：Transformer 解码器不返回 alphas 和 sorted_cap_indices
+            predictions = model(imgs, caps)
+
             # 3. 计算损失
             # captions从第2个词开始为targets
-            loss = loss_fn(predictions, sorted_captions[:, 1:], lengths)
-            # 重随机注意力正则项，使得模型尽可能全面的利用到每个网格
-            # 要求所有时刻在同一个网格上的注意力分数的平方和接近1
-            loss += config.alpha_weight * ((1. - alphas.sum(axis=1)) ** 2).mean()
+            loss = loss_fn(predictions, caps[:, 1:], caplens)
 
-            loss.backward()
+            # 4. 反向传播和优化
+            optimizer.zero_grad()  # 清除之前的梯度
+            loss.backward()        # 反向传播计算梯度
+
             # 梯度截断
             if config.grad_clip > 0:
                 nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
-            
-            # 4. 更新参数
-            optimizer.step()
+
+            optimizer.step()       # 更新参数
+
             
             if (i+1) % 100 == 0:
                 print('epoch %d, step %d: loss=%.2f' % (epoch, i+1, loss.cpu()))

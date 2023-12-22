@@ -128,6 +128,7 @@ class ImageCaptioningApp(QWidget):
             caption = generate_caption(self.image_path, self.model, self.transform)
             caption_words = indices_to_sentence_nested(caption, self.vocab)
             self.caption_label.setText(caption_words)
+            print("图片描述:", caption_words)
 
 transform = transforms.Compose([
     transforms.Resize(256),
@@ -139,8 +140,8 @@ transform = transforms.Compose([
 with open('../data/cloth/vocab.json', 'r') as f:
     vocab = json.load(f)
 
-# trained_model = './model/best_model.ckpt'
-trained_model = './model/last_model.ckpt'
+# trained_model = './model/_model.ckpt'
+trained_model = './model/ckpt_model.ckpt'
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 checkpoint = torch.load(trained_model, map_location=device)
@@ -155,3 +156,5 @@ if __name__ == '__main__':
     ex = ImageCaptioningApp(model,vocab,transform)
     ex.show()
     sys.exit(app.exec_())
+
+   
