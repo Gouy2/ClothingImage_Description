@@ -19,6 +19,25 @@ class PackedCrossEntropyLoss(nn.Module):
         predictions = pack_padded_sequence(predictions, lengths, batch_first=True)[0]
         targets = pack_padded_sequence(targets, lengths, batch_first=True)[0]
         return self.loss_fn(predictions, targets)
+    
+
+class TransformerCrossEntropyLoss(nn.Module):
+    def __init__(self):
+        super(TransformerCrossEntropyLoss, self).__init__()
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def forward(self, predictions, targets, lengths):
+        """
+        参数：
+            predictions：预测结果
+            targets：文本描述
+            lengths：文本长度
+        """
+        # 使用 enforce_sorted=False 允许非降序排列的序列
+        predictions_packed = pack_padded_sequence(predictions, lengths, batch_first=True, enforce_sorted=False)[0]
+        targets_packed = pack_padded_sequence(targets, lengths, batch_first=True, enforce_sorted=False)[0]
+        return self.loss_fn(predictions_packed, targets_packed)
+
         
 
 # 优化器

@@ -21,8 +21,30 @@ class TransformerDecoderLayer(nn.Module):
         self.dropout3 = nn.Dropout(dropout)
 
     def forward(self, tgt, memory, tgt_mask, memory_mask, tgt_key_padding_mask, memory_key_padding_mask):
+        
+        # print("tgt shape:", tgt.shape)
+        # print("memory shape:", memory.shape)
+
+        # 确保 key_padding_mask 和 attn_mask 类型一致
+        if tgt_key_padding_mask is not None:
+            tgt_key_padding_mask = tgt_key_padding_mask.bool()
+        
+        if memory_key_padding_mask is not None:
+            memory_key_padding_mask = memory_key_padding_mask.bool()
+
+        if tgt_mask is not None:
+            tgt_mask = tgt_mask.bool()
+
+        if memory_mask is not None:
+            memory_mask = memory_mask.bool()
+
+        memory = memory.repeat(1, tgt.size(1), 1)
+
         tgt2 = self.norm1(tgt)
         q = k = tgt2
+
+        # print("q, k shape:", q.shape)
+
         tgt2 = self.self_attn(q, k, value=tgt2, attn_mask=tgt_mask, key_padding_mask=tgt_key_padding_mask)[0]
         tgt = tgt + self.dropout1(tgt2)
         tgt2 = self.norm2(tgt)
@@ -79,7 +101,7 @@ class TransformerDecoder(nn.Module):
         # 生成序列掩码
         tgt_mask = self.generate_square_subsequent_mask(captions.size(0)).to(captions.device)
 
-        memory_key_padding_mask = None  # 如有必要，添加合适的掩码
+        memory_key_padding_mask = None  
 
         # 应用 Transformer 层
         for layer in self.layers:

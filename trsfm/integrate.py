@@ -15,6 +15,7 @@ class Transformer(nn.Module):
 
     def forward(self, images, captions):
         image_code = self.encoder(images)
+        # print("Captions shape:", captions.shape)
         return self.decoder(captions, image_code )
     
     def generate_by_beamsearch(self, images, beam_k, max_len):

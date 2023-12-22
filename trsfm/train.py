@@ -8,7 +8,7 @@ from argparse import Namespace
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from module.dataset import create_dataset,mktrainval
-from module.loss_opt import PackedCrossEntropyLoss,get_optimizer
+from module.loss_opt import TransformerCrossEntropyLoss,get_optimizer
 from module.eval import evaluate
 from integrate import Transformer
 
@@ -17,16 +17,16 @@ from integrate import Transformer
 config = Namespace(
     max_len = 120,
     captions_per_image = 1,
+    # image_code_dim = 2048,
     batch_size = 16,
-    image_code_dim = 2048,
     word_dim = 512,
-    num_heads = 8 , #注意力头数
+    num_heads = 4 , #注意力头数
     num_layers = 6 , #解码器中的层数
-    ff_dim = 2048 , #前馈网络的维度
+    ff_dim = 1024 , #前馈网络的维度
     encoder_learning_rate = 0.0001,
-    decoder_learning_rate = 0.0005,
+    decoder_learning_rate = 0.0001,
     num_epochs = 10,
-    grad_clip = 5.0, 
+    grad_clip = 2.0, 
     alpha_weight = 1.0, 
     evaluate_step = 250, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
@@ -89,7 +89,7 @@ def main():
     model.train()
 
     # 损失函数
-    loss_fn = PackedCrossEntropyLoss().to(device)
+    loss_fn = TransformerCrossEntropyLoss().to(device)
 
     best_res = 0
     print("开始训练")
@@ -99,7 +99,7 @@ def main():
 
     for epoch in range(start_epoch, config.num_epochs):
         for i, (imgs, caps, caplens) in enumerate(train_loader):
-            optimizer.zero_grad()
+            
             # 1. 读取数据至GPU
             imgs = imgs.to(device)
             caps = caps.to(device)
@@ -109,6 +109,8 @@ def main():
             # 2. 前馈计算
             # 注意：Transformer 解码器不返回 alphas 和 sorted_cap_indices
             predictions = model(imgs, caps)
+
+            caplens = caplens.to('cpu').long()  # 确保长度在 CPU 上并且为 int64 类型
 
             # 3. 计算损失
             # captions从第2个词开始为targets
