@@ -17,9 +17,7 @@ class ViTEncoder(nn.Module):
             # for param in list(self.model.parameters())[:num_frozen_layers]:
             #     param.requires_grad = False
 
-
         self.model.head = nn.Identity()  # 空层，输出特征表示
-
 
     def forward(self, images):
         # 通过 Vision Transformer 提取特征

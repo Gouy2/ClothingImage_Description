@@ -4,7 +4,6 @@ import torch.nn as nn
 from encoder import ViTEncoder
 from decoder import TransformerDecoder
 
-
 class Transformer(nn.Module):
     def __init__(self, vocab, embed_dim, num_heads, num_layers, ff_dim, dropout=0.1):
         super(Transformer, self).__init__()

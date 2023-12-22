@@ -1,14 +1,12 @@
 import sys
 import json
 import torch
-
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QFileDialog, QHBoxLayout
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
-
 from torchvision import transforms
 
-from output import generate_caption, indices_to_sentence_nested
+from gru.output import generate_caption, indices_to_sentence_nested
 
 
 class ImageCaptioningApp(QWidget):
@@ -130,27 +128,24 @@ class ImageCaptioningApp(QWidget):
             self.caption_label.setText(caption_words)
             print("图片描述:", caption_words)
 
-transform = transforms.Compose([
+
+
+if __name__ == '__main__':
+
+
+    with open('../data/cloth/vocab.json', 'r') as f:
+        vocab = json.load(f)
+
+    transform = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
+    ])
 
-with open('../data/cloth/vocab.json', 'r') as f:
-    vocab = json.load(f)
+    #model = './model/_model.ckpt'
+    model = '.../save/3_1.ckpt'
 
-# trained_model = './model/_model.ckpt'
-trained_model = './model/ckpt_model.ckpt'
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load(trained_model, map_location=device)
-model = checkpoint['model']
-
-model = model.to(device)
-model.eval()
-
-if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     ex = ImageCaptioningApp(model,vocab,transform)
