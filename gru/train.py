@@ -33,7 +33,8 @@ config = Namespace(
     grad_clip = 5.0, 
     alpha_weight = 1.0, 
     evaluate_step = 250, # 每隔多少步在验证集上测试一次
-    checkpoint = './model/ckpt_model.ckpt', # 如果不为None，则利用该变量路径的模型继续训练
+    checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
+    # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
     last_checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
     beam_k = 5
@@ -47,8 +48,7 @@ def main():
     torch.backends.cudnn.enabled = False
     # torch.backends.cudnn.enabled = True
     # torch.backends.cudnn.benchmark = True
-    # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-    # # torch.cuda.device_count()
+    os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     print(device)
 
@@ -100,7 +100,7 @@ def main():
 
 
 
-    for epoch in range(start_epoch, config.num_epochs):
+    for epoch in range(start_epoch, config.num_epochs +start_epoch ):
         for i, (imgs, caps, caplens) in enumerate(train_loader):
             optimizer.zero_grad()
             # 1. 读取数据至GPU

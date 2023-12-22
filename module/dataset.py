@@ -87,7 +87,7 @@ def create_dataset(file_path,vocab_path,image_path):
         vocab_combined = special_tokens + vocab_combined
 
         # 转换为 {word: index} 形式的词典
-        word_to_index_combined = {word: index+1 for index, word in enumerate(vocab_combined)}
+        word_to_index_combined = {word: index for index, word in enumerate(vocab_combined)}
 
         # print(list(itertools.islice(word_to_index_combined.items(), 10)))
 
