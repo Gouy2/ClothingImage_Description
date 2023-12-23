@@ -108,9 +108,21 @@ def main():
             caps = caps.to(device)
             caplens = caplens.to(device)
 
+            # print("imgs",imgs)
+            # print("caps",caps)
+            # print("caplens",caplens)
 
             # 2. 前馈计算
             predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
+
+            # print("predictions",predictions)
+            # print("alphas",alphas)
+            # print("sorted_captions",sorted_captions)
+            # print("lengths",lengths)
+            # print("sorted_cap_indices",sorted_cap_indices)
+
+
+
             # 3. 计算损失
             # captions从第2个词开始为targets
             loss = loss_fn(predictions, sorted_captions[:, 1:], lengths)
