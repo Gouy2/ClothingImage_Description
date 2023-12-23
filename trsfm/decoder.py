@@ -28,7 +28,11 @@ class TransformerDecoderLayer(nn.Module):
         tgt2 = self.norm2(tgt)
 
         # 调整 memory 的形状以匹配 tgt
-        memory = memory.repeat(1, tgt.size(1), 1)
+        if memory.dim() == 2:
+            memory = memory.unsqueeze(1)
+        if memory.size(1) != tgt.size(1):
+            memory = memory.repeat(1, tgt.size(1), 1)
+        
         tgt2, _ = self.cross_attn(tgt2, memory, memory, attn_mask=memory_mask)
         tgt = tgt + self.dropout2(tgt2)
 

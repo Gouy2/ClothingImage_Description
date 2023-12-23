@@ -40,8 +40,8 @@ config = Namespace(
 def main():
     # 设置GPU信息
     
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    torch.backends.cudnn.enabled = False
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # torch.backends.cudnn.enabled = False
     # torch.backends.cudnn.enabled = True
     # torch.backends.cudnn.benchmark = True
     # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
@@ -134,7 +134,6 @@ def main():
 
             optimizer.step()       # 更新参数
 
-            
             if (i+1) % 50 == 0:
                 print('epoch %d, step %d: loss=%.2f' % (epoch, i+1, loss.cpu()))
                 fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i+1, loss.cpu()))
@@ -148,6 +147,7 @@ def main():
                     }
             
             if (i+1) % config.evaluate_step == 0:
+                print("验证中...")
                 bleu_score = evaluate(valid_loader, model, config)
 
                 # 5. 选择模型

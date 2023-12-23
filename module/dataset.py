@@ -129,7 +129,7 @@ def create_dataset(file_path,vocab_path,image_path):
             json.dump(data, fw)
 
 
-    def split_data_for_validation(transformed_data, validation_ratio=0.1):
+    def split_data_for_validation(transformed_data, validation_ratio=0.05):
         """
         从训练集中随机抽取一部分数据作为验证集。
         """

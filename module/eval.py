@@ -15,14 +15,21 @@ def evaluate(data_loader, model, config):
     filterd_words = set({model.vocab['<start>'], model.vocab['<end>'], model.vocab['<pad>']})
     cpi = config.captions_per_image
     device = next(model.parameters()).device
+
+    #打印data_loader的大小
+    # print("data_loader",len(data_loader))
+
     for i, (imgs, caps, caplens) in enumerate(data_loader):
         with torch.no_grad():
+            # print("i:",i)
             # 通过束搜索，生成候选文本
             texts = model.generate_by_beamsearch(imgs.to(device), config.beam_k, config.max_len+2)
             # 候选文本
             cands.extend([filter_useless_words(text, filterd_words) for text in texts])
             # 参考文本
             refs.extend([filter_useless_words(cap, filterd_words) for cap in caps.tolist()])
+    
+    # print("cands",cands[0])
     # 实际上，每个候选文本对应cpi条参考文本
     multiple_refs = []
     for idx in range(len(refs)):

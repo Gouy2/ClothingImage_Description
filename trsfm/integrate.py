@@ -26,17 +26,22 @@ class Transformer(nn.Module):
         device = images.device
 
         for image_code in image_codes:
-            # 将图像表示复制k份
-            image_code = image_code.unsqueeze(0).repeat(beam_k,1,1,1)
-            # 生成k个候选句子，初始时，仅包含开始符号<start>
+            image_code = image_code.unsqueeze(0).repeat(beam_k, 1, 1)
             cur_sents = torch.full((beam_k, 1), self.vocab['<start>'], dtype=torch.long).to(device)
-            # 存储已生成完整的句子的概率
             probs = torch.zeros(beam_k, 1).to(device)
             k = beam_k
 
+            end_sents = []  # 初始化空列表
+            end_probs = []
+
             while True:
-                preds, hidden_state = self.decoder(image_code, cur_sents, None) # 现在直接传递整个序列
-                preds = preds[:, -1, :] # 只考虑最后一个输出
+                preds = self.decoder(cur_sents, image_code)  # 不使用.squeeze(1)
+                
+                # 确保preds是三维的
+                if preds.dim() == 2:
+                    preds = preds.unsqueeze(1)
+
+                preds = preds[:, -1, :]  # 获取序列中的最后一个词的预测
                 preds = nn.functional.log_softmax(preds, dim=1)
 
                 probs = probs.repeat(1, preds.size(1)) + preds
@@ -48,8 +53,8 @@ class Transformer(nn.Module):
 
                 end_indices = [idx for idx, word in enumerate(word_indices) if word == self.vocab['<end>']]
                 if len(end_indices) > 0:
-                    end_sents = cur_sents[end_indices].tolist()
-                    end_probs = values[end_indices]
+                    end_sents.extend(cur_sents[end_indices].tolist())
+                    end_probs.extend(values[end_indices].tolist())
                     k -= len(end_indices)
                     if k == 0:
                         break
@@ -64,9 +69,10 @@ class Transformer(nn.Module):
 
             if len(end_sents) == 0:
                 gen_sent = cur_sents[0].tolist()
-            else: 
+            else:
                 gen_sent = end_sents[end_probs.index(max(end_probs))]
 
             texts.append(gen_sent)
         return texts
+
 
