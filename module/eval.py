@@ -17,11 +17,13 @@ def evaluate(data_loader, model, config):
     device = next(model.parameters()).device
 
     #打印data_loader的大小
-    # print("data_loader",len(data_loader))
+    print("len(data_loader):",len(data_loader))
 
     for i, (imgs, caps, caplens) in enumerate(data_loader):
         with torch.no_grad():
             # print("i:",i)
+            if (i+1)%10 == 0:
+                print(f"{i+1}/{len(data_loader)}")
             # 通过束搜索，生成候选文本
             texts = model.generate_by_beamsearch(imgs.to(device), config.beam_k, config.max_len+2)
             # 候选文本

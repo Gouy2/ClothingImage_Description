@@ -1,1 +1,8 @@
-epoch 1, step 50: loss=2.36 
+epoch 1, step 50: loss=2.35 
+epoch 1, step 100: loss=1.50 
+epoch 1, step 150: loss=1.12 
+epoch 1, step 200: loss=1.06 
+epoch 1, step 250: loss=0.96 
+Validation@epoch, 1, step, 250, BLEU-4=0.02
+epoch 1, step 300: loss=1.03 
+epoch 1, step 350: loss=0.92 

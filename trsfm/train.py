@@ -24,11 +24,11 @@ config = Namespace(
     num_layers = 6 , #解码器中的层数
     ff_dim = 1024 , #前馈网络的维度
     encoder_learning_rate = 0.0001,
-    decoder_learning_rate = 0.0001,
+    decoder_learning_rate = 0.0005,
     num_epochs = 10,
-    grad_clip = 2.0, 
+    grad_clip = 5.0, 
     alpha_weight = 1.0, 
-    evaluate_step = 250, # 每隔多少步在验证集上测试一次
+    evaluate_step = 300, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
     # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
@@ -134,7 +134,7 @@ def main():
 
             optimizer.step()       # 更新参数
 
-            if (i+1) % 50 == 0:
+            if (i+1) % 100 == 0:
                 print('epoch %d, step %d: loss=%.2f' % (epoch, i+1, loss.cpu()))
                 fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i+1, loss.cpu()))
                 fw.flush()
