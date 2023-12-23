@@ -18,6 +18,7 @@ class ImageEncoder(nn.Module):
     def forward(self, images):
         out = self.grid_rep_extractor(images) 
         return out
+    
 
 
 class AdditiveAttention(nn.Module):

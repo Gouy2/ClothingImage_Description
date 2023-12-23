@@ -2,37 +2,35 @@ import os
 import json
 import torch
 import torch.nn as nn
-from torch.nn.utils.rnn import pack_padded_sequence
-from torch.utils.data import Dataset
-import torchvision
-import torchvision.transforms as transforms
+import sys
 from argparse import Namespace
 
-# from test import dataLoader,data,gru,Loss_opt,resnet
-from dataloader import mktrainval
-from arctic import ARCTIC
-from loss_opt import PackedCrossEntropyLoss,get_optimizer
-from eval import evaluate
-from dataProcess import create_dataset
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from module.dataset import create_dataset,mktrainval
+from module.loss_opt import TransformerCrossEntropyLoss,get_optimizer
+from module.eval import evaluate
+from integrate import Transformer
 
 
 # 设置模型超参数和辅助变量
 config = Namespace(
-    max_len = 30,
-    captions_per_image = 5,
-    batch_size = 32,
-    image_code_dim = 2048,
+    max_len = 120,
+    captions_per_image = 1,
+    # image_code_dim = 2048,
+    batch_size = 16,
     word_dim = 512,
-    hidden_size = 512,
-    attention_dim = 512, 
-    num_layers = 1, 
+    num_heads = 4 , #注意力头数
+    num_layers = 6 , #解码器中的层数
+    ff_dim = 1024 , #前馈网络的维度
     encoder_learning_rate = 0.0001,
-    decoder_learning_rate = 0.0005,
+    decoder_learning_rate = 0.0001,
     num_epochs = 10,
-    grad_clip = 5.0, 
+    grad_clip = 2.0, 
     alpha_weight = 1.0, 
-    evaluate_step = 700, # 每隔多少步在验证集上测试一次
+    evaluate_step = 250, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
+    # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
     last_checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
     beam_k = 5
@@ -42,8 +40,8 @@ config = Namespace(
 def main():
     # 设置GPU信息
     
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    # # torch.backends.cudnn.enabled = False
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # torch.backends.cudnn.enabled = False
     # torch.backends.cudnn.enabled = True
     # torch.backends.cudnn.benchmark = True
     # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
@@ -75,7 +73,7 @@ def main():
     start_epoch = 1
     checkpoint = config.checkpoint
     if checkpoint is None:
-        model = ARCTIC(config.image_code_dim, vocab, config.word_dim, config.attention_dim, config.hidden_size, config.num_layers)
+        model = Transformer( vocab, config.word_dim, config.num_heads, config.num_layers, config.ff_dim)
     else:
         checkpoint = torch.load(checkpoint)
         start_epoch = checkpoint['epoch'] + 1
@@ -91,7 +89,7 @@ def main():
     model.train()
 
     # 损失函数
-    loss_fn = PackedCrossEntropyLoss().to(device)
+    loss_fn = TransformerCrossEntropyLoss().to(device)
 
     best_res = 0
     print("开始训练")
@@ -101,31 +99,42 @@ def main():
 
     for epoch in range(start_epoch, config.num_epochs):
         for i, (imgs, caps, caplens) in enumerate(train_loader):
-            optimizer.zero_grad()
+            
             # 1. 读取数据至GPU
             imgs = imgs.to(device)
             caps = caps.to(device)
             caplens = caplens.to(device)
 
+            # print("imgs",imgs)
+            # print("caps",caps.shape)
+            
 
             # 2. 前馈计算
-            predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
+            # 注意：Transformer 解码器不返回 alphas 和 sorted_cap_indices
+            predictions = model(imgs, caps)
+
+            # print("Model output sample:", predictions.shape)
+            # print("Target sample:", caps.shape)
+
+            caplens = caplens.to('cpu').long()  # 确保长度在 CPU 上并且为 int64 类型
+
+            # print("caplens",caplens)
+
             # 3. 计算损失
             # captions从第2个词开始为targets
-            loss = loss_fn(predictions, sorted_captions[:, 1:], lengths)
-            # 重随机注意力正则项，使得模型尽可能全面的利用到每个网格
-            # 要求所有时刻在同一个网格上的注意力分数的平方和接近1
-            loss += config.alpha_weight * ((1. - alphas.sum(axis=1)) ** 2).mean()
+            loss = loss_fn(predictions, caps[:, 1:], caplens)
 
-            loss.backward()
+            # 4. 反向传播和优化
+            optimizer.zero_grad()  # 清除之前的梯度
+            loss.backward()        # 反向传播计算梯度
+
             # 梯度截断
             if config.grad_clip > 0:
                 nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
-            
-            # 4. 更新参数
-            optimizer.step()
-            
-            if (i+1) % 100 == 0:
+
+            optimizer.step()       # 更新参数
+
+            if (i+1) % 50 == 0:
                 print('epoch %d, step %d: loss=%.2f' % (epoch, i+1, loss.cpu()))
                 fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i+1, loss.cpu()))
                 fw.flush()
@@ -138,6 +147,7 @@ def main():
                     }
             
             if (i+1) % config.evaluate_step == 0:
+                print("验证中...")
                 bleu_score = evaluate(valid_loader, model, config)
 
                 # 5. 选择模型

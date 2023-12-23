@@ -2,23 +2,26 @@ import os
 import json
 import random
 import re
+import torchvision.transforms as transforms
+import torch
 
+from torch.utils.data import Dataset
 from collections import Counter
+from PIL import Image
 
 file_path = "../data/cloth"
 vocab_path = "../data/cloth/vocab.json"
 image_path = "../data/cloth/images"
 
-def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
+def create_dataset(file_path,vocab_path,image_path):
     def process_captions(dataset_type,
-                        target_num_captions = 5):
+                        ):
         """
         处理每张图片的描述，确保每张图片对应五个描述。
         """
 
         file_name = f'{dataset_type}_captions.json'
-        # print(file_name)
-        # print("载入数据集:",file_name)
+
         with open(os.path.join(file_path, file_name), 'r') as file:
             captions_data = json.load(file)
 
@@ -27,22 +30,13 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
         for image_name, captions in captions_data.items():
             transformed_data["IMAGES"].append(os.path.join(image_path, image_name))
             
+            captions = process_punctuation(captions)
+
             if not isinstance(captions, list):
                 captions = [captions]
+            
+            transformed_data["CAPTIONS"].append(captions)
 
-            for caption in captions:
-                split_captions = [caption.strip() for caption in caption.split('.') if caption.strip()]
-                
-
-
-                if len(split_captions) < target_num_captions:
-                    split_captions += [random.choice(split_captions) for _ in range(target_num_captions - len(split_captions))]
-                elif len(split_captions) > target_num_captions:
-                    split_captions = random.sample(split_captions, target_num_captions)
-
-                for split_caption in split_captions:
-                    transformed_data["CAPTIONS"].append([split_caption])
-        
         return transformed_data
 
     def process_punctuation(text):
@@ -93,7 +87,7 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
         vocab_combined = special_tokens + vocab_combined
 
         # 转换为 {word: index} 形式的词典
-        word_to_index_combined = {word: index+1 for index, word in enumerate(vocab_combined)}
+        word_to_index_combined = {word: index for index, word in enumerate(vocab_combined)}
 
         # print(list(itertools.islice(word_to_index_combined.items(), 10)))
 
@@ -119,14 +113,12 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
                 # caption_indices =  [word_to_index.get(word, unk_index) for word in words]
                 transformed_data_with_indices["CAPTIONS"].append(caption_indices)
 
-        # print(len(transformed_data_with_indices["IMAGES"]))
-        # print(len(transformed_data_with_indices["CAPTIONS"]))
-        # for i in range (len(transformed_data_with_indices["CAPTIONS"])):
-             
-        #     if len(transformed_data_with_indices["CAPTIONS"][i]) >=  20 :
-        #         print(transformed_data_with_indices["CAPTIONS"][i] )
        
-        assert len( transformed_data_with_indices["IMAGES"]) * target_num_captions  == len(transformed_data_with_indices["CAPTIONS"])
+        assert len( transformed_data_with_indices["IMAGES"])  == len(transformed_data_with_indices["CAPTIONS"])
+        
+        # print(transformed_data["CAPTIONS"][0])
+        # print(transformed_data_with_indices["CAPTIONS"][0])
+
         return transformed_data_with_indices
 
     def save_data_to_json(data, file_path):
@@ -137,14 +129,14 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
             json.dump(data, fw)
 
 
-    def split_data_for_validation(transformed_data, validation_ratio=0.1,num_captions_per_image = 5):
+    def split_data_for_validation(transformed_data, validation_ratio=0.05):
         """
         从训练集中随机抽取一部分数据作为验证集。
         """
-        # 按图像分组数据
-        grouped_data = [{"IMAGE": transformed_data["IMAGES"][i // num_captions_per_image], 
-                         "CAPTIONS": transformed_data["CAPTIONS"][i:i + num_captions_per_image]} 
-                        for i in range(0, len(transformed_data["CAPTIONS"]), num_captions_per_image)]
+        
+        grouped_data = [{"IMAGE": transformed_data["IMAGES"][i], 
+                         "CAPTIONS": transformed_data["CAPTIONS"][i]} 
+                        for i in range(0, len(transformed_data["CAPTIONS"]))]
 
         # 随机打乱并分割数据
         random.shuffle(grouped_data)
@@ -155,11 +147,11 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
 
         for group in grouped_data[:split_index]:
             val_data["IMAGES"].extend([group["IMAGE"]])
-            val_data["CAPTIONS"].extend(group["CAPTIONS"])
+            val_data["CAPTIONS"].extend([group["CAPTIONS"]])
 
         for group in grouped_data[split_index:]:
             train_data["IMAGES"].extend([group["IMAGE"]])
-            train_data["CAPTIONS"].extend(group["CAPTIONS"])
+            train_data["CAPTIONS"].extend([group["CAPTIONS"]])
 
         return train_data, val_data
     
@@ -177,7 +169,7 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
     transformed_train_data = process_captions("train")
 
     # 处理词典
-    word_to_index_combined, unk_index = process_vocab(transformed_test_data, transformed_train_data, os.path.join(file_path, 'vocab.json'))
+    word_to_index_combined, unk_index = process_vocab(test_data, train_data, os.path.join(file_path, 'vocab.json'))
 
     # 转换为索引
     transformed_test_data_with_indices = convert_captions_to_indices(transformed_test_data, word_to_index_combined, unk_index)
@@ -190,8 +182,97 @@ def create_dataset(file_path,vocab_path,image_path,target_num_captions = 5):
     save_data_to_json(final_train_data, os.path.join(file_path, 'train_data.json'))
     save_data_to_json(val_data, os.path.join(file_path, 'val_data.json'))
 
+# 定义数据集类
+class ImageTextDataset(Dataset):
+    """
+    PyTorch数据类，用于PyTorch DataLoader来按批次产生数据
+    """
 
-# create_dataset(file_path,vocab_path,image_path)
+    def __init__(self, dataset_path, vocab_path, max_len=120, transform=None):
+        """
+        参数：
+            dataset_path：json格式数据文件路径
+            vocab_path：json格式词典文件路径
+            captions_per_image：每张图片对应的文本描述数
+            max_len：文本描述包含的最大单词数
+            transform: 图像预处理方法
+        """
+
+        self.max_len = max_len 
+
+        # 载入数据集
+        with open(dataset_path, 'r') as f:
+            self.data = json.load(f)
+        # 载入词典
+        with open(vocab_path, 'r') as f:
+            self.vocab = json.load(f)
+
+        # PyTorch图像预处理流程
+        self.transform = transform
+
+        # Total number of datapoints
+        self.dataset_size = len(self.data['IMAGES'])
+
+        
+    def __getitem__(self, i):
+
+        img = Image.open(self.data['IMAGES'][i]).convert('RGB')
+        if self.transform is not None:
+            img = self.transform(img)
+
+        caption = self.data['CAPTIONS'][i]
+
+        caplen = min(len(caption), self.max_len)  # 限制 caption 的长度
+
+        caption = caption[:caplen]  # 截断超长的 caption
+
+        caption = torch.LongTensor(self.data['CAPTIONS'][i]+ [self.vocab['<pad>']] * (self.max_len + 2 - caplen))
+
+        return img, caption, caplen
+        
+
+    def __len__(self):
+        return self.dataset_size
+    
+# 定义数据集加载器
+def mktrainval(data_dir, vocab_path, batch_size, workers=0):
+    train_tx = transforms.Compose([
+        transforms.Resize(256),
+        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+        transforms.RandomCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    val_tx = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
+    train_set = ImageTextDataset(os.path.join(data_dir, 'train_data.json'), 
+                                 vocab_path,  transform=train_tx)
+    valid_set = ImageTextDataset(os.path.join(data_dir, 'val_data.json'), 
+                                 vocab_path,  transform=val_tx)
+    test_set = ImageTextDataset(os.path.join(data_dir, 'test_data.json'), 
+                                 vocab_path,  transform=val_tx)
+
+    train_loader = torch.utils.data.DataLoader(
+        train_set, batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=True)
+
+    valid_loader = torch.utils.data.DataLoader(
+        valid_set, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, drop_last=False)
+    
+    test_loader = torch.utils.data.DataLoader(
+        test_set, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, drop_last=False)
+
+
+    return train_loader, valid_loader, test_loader   
+
+# if __name__ == '__main__':
+#     create_dataset(file_path,vocab_path,image_path)
+    
+
 
 
 

@@ -1,40 +1,11 @@
 import torch
+import sys
+import json
 from PIL import Image
 import torchvision.transforms as transforms
-from model import ImageEncoder, AttentionDecoder
-from arctic import ARCTIC
-import json
-
-# 加载词汇表
-with open('../data/cloth/vocab.json', 'r') as f:
-    vocab = json.load(f)
-
-image_code_dim = 2048  # 根据你的模型定义调整
-
-word_dim = 512  # 根据你的模型定义调整
-attention_dim = 512  # 根据你的模型定义调整
-hidden_size = 512  # 根据你的模型定义调整
-num_layers = 1  # 根据你的模型定义调整
 
 
-# 设定图像预处理流程
-transform = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-
-# 加载训练好的模型
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-checkpoint = torch.load('./model/best_model.ckpt', map_location=device)
-model = checkpoint['model']
-
-model = model.to(device)
-model.eval()
-
-
-def generate_caption(image_path, model, transform):
+def generate_caption(image_path, trained_model, transform):
     """
     生成图片的文字描述。
 
@@ -49,12 +20,20 @@ def generate_caption(image_path, model, transform):
     生成的文字描述
     """
     # 图像加载和预处理
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    checkpoint = torch.load(trained_model, map_location=device)
+    model = checkpoint['model']
+
+    model = model.to(device)
+    model.eval()
+
     image = Image.open(image_path).convert('RGB')
     image = transform(image).unsqueeze(0).to(device)
 
     # 生成描述
     with torch.no_grad():
-        caption = model.generate_by_beamsearch(image, beam_k=5, max_len=30)
+        caption = model.generate_by_beamsearch(image, beam_k=5, max_len=120)
 
     return caption
 
@@ -89,6 +68,12 @@ def indices_to_sentence_nested(indices_list, vocab):
 
 
 # 使用示例
-caption = generate_caption('../data/cloth/test.jpg', model, transform)
-caption_words = indices_to_sentence_nested(caption, vocab)
-print("Generated Caption:", caption_words)
+# if __name__ == '__main__':
+    # caption = generate_caption('../data/cloth/test.jpg', model, transform)
+    # caption_words = indices_to_sentence_nested(caption, vocab)
+    # print("Generated Caption:", caption_words)
+
+    # app = QApplication(sys.argv)
+    # ex = ImageCaptioningApp(model,vocab,transform)
+    # ex.show()
+    # sys.exit(app.exec_())
