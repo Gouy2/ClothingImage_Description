@@ -5,7 +5,7 @@ from PIL import Image
 import torchvision.transforms as transforms
 
 
-def generate_caption(image_path, trained_model, transform):
+def generate_caption(image_path, trained_model):
     """
     生成图片的文字描述。
 
@@ -28,6 +28,13 @@ def generate_caption(image_path, trained_model, transform):
     model = model.to(device)
     model.eval()
 
+    transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
     image = Image.open(image_path).convert('RGB')
     image = transform(image).unsqueeze(0).to(device)
 
@@ -38,7 +45,7 @@ def generate_caption(image_path, trained_model, transform):
     return caption
 
 
-def indices_to_sentence_nested(indices_list, vocab):
+def indices_to_sentence_nested(indices_list, vocab_path):
     """
     将嵌套单词索引列表转换为对应的单词句子，并去除特殊标记。
 
@@ -50,6 +57,9 @@ def indices_to_sentence_nested(indices_list, vocab):
     单词组成的句子字符串
     """
     # 词汇表反向映射：从索引找到单词
+    with open(vocab_path, 'r') as f:
+        vocab = json.load(f)
+
     reverse_vocab = {int(v): k for k, v in vocab.items()}
 
     # 处理可能的嵌套列表
@@ -68,10 +78,11 @@ def indices_to_sentence_nested(indices_list, vocab):
 
 
 # 使用示例
-# if __name__ == '__main__':
-    # caption = generate_caption('../data/cloth/test.jpg', model, transform)
-    # caption_words = indices_to_sentence_nested(caption, vocab)
-    # print("Generated Caption:", caption_words)
+if __name__ == '__main__':
+    model = './model/last_model.ckpt'
+    caption = generate_caption('../data/cloth/test.jpg', model)
+    caption_words = indices_to_sentence_nested(caption)
+    print("Generated Caption:", caption_words)
 
     # app = QApplication(sys.argv)
     # ex = ImageCaptioningApp(model,vocab,transform)

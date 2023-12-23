@@ -6,15 +6,14 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 from torchvision import transforms
 
-from gru.output import generate_caption, indices_to_sentence_nested
+from .output import generate_caption, indices_to_sentence_nested
 
 
 class ImageCaptioningApp(QWidget):
-    def __init__(self, model, vocab, transform):
+    def __init__(self, model,vocab_path):
         super().__init__()
         self.model = model
-        self.vocab = vocab
-        self.transform = transform
+        self.vocab_path = vocab_path
         self.initUI()
 
     def initUI(self):
@@ -123,8 +122,8 @@ class ImageCaptioningApp(QWidget):
     def generateCaption(self):
         """生成图片描述并显示"""
         if hasattr(self, 'image_path'):
-            caption = generate_caption(self.image_path, self.model, self.transform)
-            caption_words = indices_to_sentence_nested(caption, self.vocab)
+            caption = generate_caption(self.image_path, self.model)
+            caption_words = indices_to_sentence_nested(caption, self.vocab_path)
             self.caption_label.setText(caption_words)
             print("图片描述:", caption_words)
 
@@ -133,22 +132,19 @@ class ImageCaptioningApp(QWidget):
 if __name__ == '__main__':
 
 
-    with open('../data/cloth/vocab.json', 'r') as f:
-        vocab = json.load(f)
-
-    transform = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    # transform = transforms.Compose([
+    # transforms.Resize(256),
+    # transforms.CenterCrop(224),
+    # transforms.ToTensor(),
+    # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    # ])
 
     #model = './model/_model.ckpt'
     model = '.../save/3_1.ckpt'
 
 
     app = QApplication(sys.argv)
-    ex = ImageCaptioningApp(model,vocab,transform)
+    ex = ImageCaptioningApp(model)
     ex.show()
     sys.exit(app.exec_())
 
