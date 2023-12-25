@@ -35,6 +35,7 @@ for image_name, captions in test_captions_data.items():
     #     captions = ' '.join(captions)
 
 
+
     # 分割并处理每个描述
     for caption in captions:
         split_captions = [caption.strip() for caption in caption.split('.') if caption.strip()]

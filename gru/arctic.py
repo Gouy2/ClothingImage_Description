@@ -21,6 +21,7 @@ class ARCTIC(nn.Module):
         texts = []
         device = images.device
         # 对每个图像样本执行束搜索
+        
         for image_code in image_codes:
             # 将图像表示复制k份
             image_code = image_code.unsqueeze(0).repeat(beam_k,1,1,1)

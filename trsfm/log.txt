@@ -1,1 +1,2 @@
-epoch 1, step 50: loss=2.36 
+Validation@epoch, 1, step, 10,METEOR=0.30
+Validation@epoch, 1, step, 20,METEOR=0.32

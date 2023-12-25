@@ -20,15 +20,15 @@ config = Namespace(
     # image_code_dim = 2048,
     batch_size = 16,
     word_dim = 512,
-    num_heads = 4 , #注意力头数
+    num_heads = 8 , #注意力头数
     num_layers = 6 , #解码器中的层数
     ff_dim = 1024 , #前馈网络的维度
     encoder_learning_rate = 0.0001,
-    decoder_learning_rate = 0.0001,
+    decoder_learning_rate = 0.0005,
     num_epochs = 10,
-    grad_clip = 2.0, 
+    grad_clip = 5.0, 
     alpha_weight = 1.0, 
-    evaluate_step = 250, # 每隔多少步在验证集上测试一次
+    evaluate_step = 600, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
     # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
@@ -105,24 +105,20 @@ def main():
             caps = caps.to(device)
             caplens = caplens.to(device)
 
-            # print("imgs",imgs)
-            # print("caps",caps.shape)
             
-
             # 2. 前馈计算
-            # 注意：Transformer 解码器不返回 alphas 和 sorted_cap_indices
-            predictions = model(imgs, caps)
 
-            # print("Model output sample:", predictions.shape)
-            # print("Target sample:", caps.shape)
+            predictions = model(imgs, caps)
 
             caplens = caplens.to('cpu').long()  # 确保长度在 CPU 上并且为 int64 类型
 
-            # print("caplens",caplens)
+            # print("caps[:, 1:]:",caps[:, 1:])
 
             # 3. 计算损失
             # captions从第2个词开始为targets
-            loss = loss_fn(predictions, caps[:, 1:], caplens)
+            caplens_adjusted = caplens - 1
+            loss = loss_fn(predictions, caps[:, 1:], caplens_adjusted)
+
 
             # 4. 反向传播和优化
             optimizer.zero_grad()  # 清除之前的梯度
@@ -134,7 +130,7 @@ def main():
 
             optimizer.step()       # 更新参数
 
-            if (i+1) % 50 == 0:
+            if (i+1) % 100 == 0:
                 print('epoch %d, step %d: loss=%.2f' % (epoch, i+1, loss.cpu()))
                 fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i+1, loss.cpu()))
                 fw.flush()
@@ -148,33 +144,37 @@ def main():
             
             if (i+1) % config.evaluate_step == 0:
                 print("验证中...")
-                bleu_score = evaluate(valid_loader, model, config)
+                meteor , rouge_score = evaluate(valid_loader, model, config)
 
                 # 5. 选择模型
-                if best_res < bleu_score:
-                    best_res = bleu_score
+                if best_res < meteor:
+                    best_res = meteor
                     torch.save(state, config.best_checkpoint)
 
                 torch.save(state, config.last_checkpoint)
 
-                fw.write('Validation@epoch, %d, step, %d, BLEU-4=%.2f\n' % 
-                    (epoch, i+1, bleu_score))
+                fw.write('Validation@epoch, %d, step, %d,METEOR=%.2f\n' % 
+                    (epoch, i+1, meteor))
+                
                 fw.flush()
-                print('Validation@epoch, %d, step, %d, BLEU-4=%.2f' % 
-                    (epoch, i+1, bleu_score))
+
+                print('Validation@epoch, %d, step, %d, METEOR=%.2f' % 
+                    (epoch, i+1, meteor))
+                print('Validation@epoch, %d, step, %d, ROUGE=%.2f' %
+                    (epoch, i+1, rouge_score))
                 
     checkpoint = torch.load(config.best_checkpoint)
 
     model = checkpoint['model']
 
-    bleu_score = evaluate(test_loader, model, config)
+    meteor = evaluate(test_loader, model, config)
 
     print("Evaluate on the test set with the model that has the best performance on the validation set")
 
     print('Epoch: %d, BLEU-4=%.2f' % 
-        (checkpoint['epoch'], bleu_score))
+        (checkpoint['epoch'], meteor))
     fw.write('Epoch: %d, BLEU-4=%.2f' % 
-        (checkpoint['epoch'], bleu_score))
+        (checkpoint['epoch'], meteor))
     fw.close()
 
       

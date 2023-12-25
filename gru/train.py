@@ -32,7 +32,7 @@ config = Namespace(
     num_epochs = 20,
     grad_clip = 5.0, 
     alpha_weight = 1.0, 
-    evaluate_step = 250, # 每隔多少步在验证集上测试一次
+    evaluate_step = 300, # 每隔多少步在验证集上测试一次
     checkpoint = None, # 如果不为None，则利用该变量路径的模型继续训练
     # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
@@ -115,13 +115,11 @@ def main():
             # 2. 前馈计算
             predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
 
-            # print("predictions",predictions)
-            # print("alphas",alphas)
-            # print("sorted_captions",sorted_captions)
-            # print("lengths",lengths)
-            # print("sorted_cap_indices",sorted_cap_indices)
-
-
+            print("caps[:, 1:]:",caps[:, 1:])
+            print("sorted_captions[:, 1:]:",sorted_captions[:, 1:])
+            # print(sorted_captions[0])
+            # print(caplens)
+            # print(lengths)
 
             # 3. 计算损失
             # captions从第2个词开始为targets
@@ -151,33 +149,42 @@ def main():
                     }
             
             if (i+1) % config.evaluate_step == 0:
-                bleu_score = evaluate(valid_loader, model, config)
+                print("验证中...")
+                meteor , rouge_score = evaluate(valid_loader, model, config)
 
                 # 5. 选择模型
-                if best_res < bleu_score:
-                    best_res = bleu_score
+                if best_res < meteor:
+                    best_res = meteor
                     torch.save(state, config.best_checkpoint)
 
                 torch.save(state, config.last_checkpoint)
 
-                fw.write('Validation@epoch, %d, step, %d, BLEU-4=%.2f\n' % 
-                    (epoch, i+1, bleu_score))
+                fw.write('Validation@epoch, %d, step, %d,METEOR=%.2f\n' % 
+                    (epoch, i+1, meteor))
+                
                 fw.flush()
-                print('Validation@epoch, %d, step, %d, BLEU-4=%.2f' % 
-                    (epoch, i+1, bleu_score))
+
+                print('Validation@epoch, %d, step, %d, METEOR=%.2f' % 
+                    (epoch, i+1, meteor))
+                print('Validation@epoch, %d, step, %d, ROUGE=%.2f' %
+                    (epoch, i+1, rouge_score))
                 
     checkpoint = torch.load(config.best_checkpoint)
 
     model = checkpoint['model']
 
-    bleu_score = evaluate(test_loader, model, config)
+    meteor = evaluate(test_loader, model, config)
 
     print("Evaluate on the test set with the model that has the best performance on the validation set")
 
-    print('Epoch: %d, BLEU-4=%.2f' % 
-        (checkpoint['epoch'], bleu_score))
-    fw.write('Epoch: %d, BLEU-4=%.2f' % 
-        (checkpoint['epoch'], bleu_score))
+    print('Epoch: %d, METEOR=%.2f' % 
+        (checkpoint['epoch'], meteor))
+    
+    print('Epoch: %d, ROUGE=%.2f' % 
+        (checkpoint['epoch'], rouge_score))
+    
+    fw.write('Epoch: %d, METEOR-4=%.2f' % 
+        (checkpoint['epoch'], meteor))
     fw.close()
 
       
