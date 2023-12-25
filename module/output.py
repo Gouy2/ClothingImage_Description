@@ -91,8 +91,8 @@ def indices_to_sentence_nested(indices_list, vocab_path):
 def translate_caption(caption):
     # 英语翻译中文
         translator = Translator(from_lang="English",to_lang="chinese")
-        # translation = translator.translate(caption)
-        translation = translator.translate("The upper clothing has short sleeves, cotton fabric and pure color patterns.")
+        translation = translator.translate(caption)
+        # translation = translator.translate("The upper clothing has short sleeves, cotton fabric and pure color patterns.")
         
         print(translation)
         return translation
@@ -111,8 +111,8 @@ if __name__ == '__main__':
     # caption_words = str(caption_words)
     # print("Generated Caption:", caption_words)
 
-    translator = Translator(from_lang="English",to_lang="chinese")
+    # translator = Translator(from_lang="English",to_lang="chinese")
     # translation = translator.translate(caption_words)
-    translation = translator.translate("The upper clothing has short sleeves,cotton fabric and pure color patterns.")
+    # translation = translator.translate("The upper clothing has short sleeves,cotton fabric and pure color patterns.")
         
-    print(translation)
+    # print(translation)

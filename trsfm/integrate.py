@@ -73,6 +73,8 @@ class Transformer(nn.Module):
                 gen_sent = end_sents[end_probs.index(max(end_probs))]
 
             texts.append(gen_sent)
+
+
         return texts
 
 

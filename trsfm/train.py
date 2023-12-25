@@ -105,24 +105,20 @@ def main():
             caps = caps.to(device)
             caplens = caplens.to(device)
 
-            # print("imgs",imgs)
-            # print("caps",caps.shape)
             
-
             # 2. 前馈计算
-            # 注意：Transformer 解码器不返回 alphas 和 sorted_cap_indices
-            predictions = model(imgs, caps)
 
-            # print("Model output sample:", predictions.shape)
-            # print("Target sample:", caps.shape)
+            predictions = model(imgs, caps)
 
             caplens = caplens.to('cpu').long()  # 确保长度在 CPU 上并且为 int64 类型
 
-            # print("caplens",caplens)
+            # print("caps[:, 1:]:",caps[:, 1:])
 
             # 3. 计算损失
             # captions从第2个词开始为targets
-            loss = loss_fn(predictions, caps[:, 1:], caplens)
+            caplens_adjusted = caplens - 1
+            loss = loss_fn(predictions, caps[:, 1:], caplens_adjusted)
+
 
             # 4. 反向传播和优化
             optimizer.zero_grad()  # 清除之前的梯度

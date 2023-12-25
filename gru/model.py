@@ -126,6 +126,8 @@ class AttentionDecoder(nn.Module):
         # （2）获得GRU的初始隐状态
         image_code, captions, sorted_cap_lens, sorted_cap_indices, hidden_state \
             = self.init_hidden_state(image_code, captions, cap_lens)
+        print("cap_lens",cap_lens)
+        print("sorted_cap_lens",sorted_cap_lens)
         batch_size = image_code.size(0)
         # 输入序列长度减1，因为最后一个时刻不需要预测下一个词
         lengths = sorted_cap_lens.cpu().numpy() - 1
