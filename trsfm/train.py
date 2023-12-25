@@ -155,9 +155,13 @@ def main():
 
                 fw.write('Validation@epoch, %d, step, %d,METEOR=%.2f\n' % 
                     (epoch, i+1, meteor))
+                
                 fw.flush()
+
                 print('Validation@epoch, %d, step, %d, METEOR=%.2f' % 
                     (epoch, i+1, meteor))
+                print('Validation@epoch, %d, step, %d, ROUGE=%.2f' %
+                    (epoch, i+1, rouge_score))
                 
     checkpoint = torch.load(config.best_checkpoint)
 
