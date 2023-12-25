@@ -144,33 +144,33 @@ def main():
             
             if (i+1) % config.evaluate_step == 0:
                 print("验证中...")
-                bleu_score = evaluate(valid_loader, model, config)
+                meteor , rouge_score = evaluate(valid_loader, model, config)
 
                 # 5. 选择模型
-                if best_res < bleu_score:
-                    best_res = bleu_score
+                if best_res < meteor:
+                    best_res = meteor
                     torch.save(state, config.best_checkpoint)
 
                 torch.save(state, config.last_checkpoint)
 
-                fw.write('Validation@epoch, %d, step, %d, BLEU-4=%.2f\n' % 
-                    (epoch, i+1, bleu_score))
+                fw.write('Validation@epoch, %d, step, %d,METEOR=%.2f\n' % 
+                    (epoch, i+1, meteor))
                 fw.flush()
-                print('Validation@epoch, %d, step, %d, BLEU-4=%.2f' % 
-                    (epoch, i+1, bleu_score))
+                print('Validation@epoch, %d, step, %d, METEOR=%.2f' % 
+                    (epoch, i+1, meteor))
                 
     checkpoint = torch.load(config.best_checkpoint)
 
     model = checkpoint['model']
 
-    bleu_score = evaluate(test_loader, model, config)
+    meteor = evaluate(test_loader, model, config)
 
     print("Evaluate on the test set with the model that has the best performance on the validation set")
 
     print('Epoch: %d, BLEU-4=%.2f' % 
-        (checkpoint['epoch'], bleu_score))
+        (checkpoint['epoch'], meteor))
     fw.write('Epoch: %d, BLEU-4=%.2f' % 
-        (checkpoint['epoch'], bleu_score))
+        (checkpoint['epoch'], meteor))
     fw.close()
 
       
