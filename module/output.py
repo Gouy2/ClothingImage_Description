@@ -1,9 +1,12 @@
 import torch
-import sys
+
 import json
 from PIL import Image
 import torchvision.transforms as transforms
-
+import re
+from translate import Translator
+import sys
+sys.path.append("../gru") #model定义路径
 
 def generate_caption(image_path, trained_model):
     """
@@ -11,10 +14,8 @@ def generate_caption(image_path, trained_model):
 
     参数:
     image_path: 输入图片的路径
-    model: 训练好的模型
-    transform: 图像预处理的流程
-    vocab: 词汇表
-    max_length: 生成描述的最大长度
+    trained_model: 训练好的模型
+
 
     返回:
     生成的文字描述
@@ -41,6 +42,9 @@ def generate_caption(image_path, trained_model):
     # 生成描述
     with torch.no_grad():
         caption = model.generate_by_beamsearch(image, beam_k=5, max_len=120)
+
+        # if caption is not str
+
 
     return caption
 
@@ -74,17 +78,41 @@ def indices_to_sentence_nested(indices_list, vocab_path):
     # 将单词列表拼接成句子
     sentence = ' '.join(words)
 
+    # 去除多余的空格和标点
+    sentence = re.sub(r' ,', ',', sentence)
+    sentence = re.sub(r' \.', '.', sentence)
+
+    # sentence = translate_caption(sentence) # 英语翻译中文
+
+    # print(sentence)
+
     return sentence
+
+def translate_caption(caption):
+    # 英语翻译中文
+        translator = Translator(from_lang="English",to_lang="chinese")
+        # translation = translator.translate(caption)
+        translation = translator.translate("The upper clothing has short sleeves, cotton fabric and pure color patterns.")
+        
+        print(translation)
+        return translation
 
 
 # 使用示例
 if __name__ == '__main__':
-    model = './model/last_model.ckpt'
-    caption = generate_caption('../data/cloth/test.jpg', model)
-    caption_words = indices_to_sentence_nested(caption)
-    print("Generated Caption:", caption_words)
+    vocab = '../data/cloth/vocab.json'
+    model = './model/g1-1.ckpt'
+    # model = '.../save/gru/g1-1.ckpt'
+    caption = generate_caption('../data/test.jpg', model)
+    caption_words = indices_to_sentence_nested(caption, vocab)
 
-    # app = QApplication(sys.argv)
-    # ex = ImageCaptioningApp(model,vocab,transform)
-    # ex.show()
-    # sys.exit(app.exec_())
+    # test_translate = translate_caption(caption_words)
+
+    # caption_words = str(caption_words)
+    # print("Generated Caption:", caption_words)
+
+    translator = Translator(from_lang="English",to_lang="chinese")
+    # translation = translator.translate(caption_words)
+    translation = translator.translate("The upper clothing has short sleeves,cotton fabric and pure color patterns.")
+        
+    print(translation)
