@@ -6,17 +6,25 @@ import torchvision
 import torchvision.transforms as transforms
 from torchvision.models import ResNet101_Weights
 
+
 class ImageEncoder(nn.Module):
     def __init__(self, finetuned=True):
         super(ImageEncoder, self).__init__()
         model = torchvision.models.resnet101(weights=ResNet101_Weights.DEFAULT)
-        # ResNet-101网格表示提取器
-        self.grid_rep_extractor = nn.Sequential(*(list(model.children())[:-2]))
-        for param in self.grid_rep_extractor.parameters():
+        # 保留ResNet-101的所有层，除了最后两层
+        self.feature_extractor = nn.Sequential(*(list(model.children())[:-2]))
+        # 添加全局平均池化层
+        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        for param in self.feature_extractor.parameters():
             param.requires_grad = finetuned
-        
+
     def forward(self, images):
-        out = self.grid_rep_extractor(images) 
+        # 通过特征提取层
+        out = self.feature_extractor(images)
+        # 应用全局平均池化，输出的大小为 (batch_size, channels, 1, 1)
+        out = self.global_avg_pool(out)
+        # 展平输出，使其形状变为 (batch_size, channels)
+        out = out.view(out.size(0), -1)
         return out
     
 
@@ -43,6 +51,10 @@ class AdditiveAttention(nn.Module):
             query: 查询 (batch_size, q_dim)
             key_value: 键和值，(batch_size, n_kv, kv_dim)
         """
+        # 扩展key_value维度以适配torch.bmm
+        # 假设key_value的形状为 (batch_size, key_dim)
+        # 扩展为 (batch_size, 1, key_dim)
+        key_value = key_value.unsqueeze(1)
         # （2）计算query和key的相关性，实现注意力评分函数
         # -> (batch_size, 1, attn_dim)
         queries = self.attn_w_1_q(query).unsqueeze(1)
@@ -80,25 +92,24 @@ class AttentionDecoder(nn.Module):
         """
         参数：
             image_code：图像编码器输出的图像表示 
-                        (batch_size, image_code_dim, grid_height, grid_width)
+                        (batch_size, image_code_dim)
         """
-        # 将图像网格表示转换为序列表示形式 
         batch_size, image_code_dim = image_code.size(0), image_code.size(1)
-        # -> (batch_size, grid_height, grid_width, image_code_dim) 
-        image_code = image_code.permute(0, 2, 3, 1)  
-        # -> (batch_size, grid_height * grid_width, image_code_dim)
-        image_code = image_code.view(batch_size, -1, image_code_dim)
+        
         # （1）按照caption的长短排序
         sorted_cap_lens, sorted_cap_indices = torch.sort(cap_lens, 0, True)
         captions = captions[sorted_cap_indices]
         image_code = image_code[sorted_cap_indices]
-         #（2）初始化隐状态
-        hidden_state = self.init_state(image_code.mean(axis=1))
+
+        #（2）初始化隐状态
+        # 注意：由于image_code已经是整体表示，不再需要对其进行平均
+        hidden_state = self.init_state(image_code)
         hidden_state = hidden_state.view(
                             batch_size, 
                             self.rnn.num_layers, 
                             self.rnn.hidden_size).permute(1, 0, 2)
         return image_code, captions, sorted_cap_lens, sorted_cap_indices, hidden_state
+
 
     def forward_step(self, image_code, curr_cap_embed, hidden_state):
         #（3.2）利用注意力机制获得上下文向量
@@ -126,8 +137,8 @@ class AttentionDecoder(nn.Module):
         # （2）获得GRU的初始隐状态
         image_code, captions, sorted_cap_lens, sorted_cap_indices, hidden_state \
             = self.init_hidden_state(image_code, captions, cap_lens)
-        print("cap_lens",cap_lens)
-        print("sorted_cap_lens",sorted_cap_lens)
+        # print("cap_lens",cap_lens)
+        # print("sorted_cap_lens",sorted_cap_lens)
         batch_size = image_code.size(0)
         # 输入序列长度减1，因为最后一个时刻不需要预测下一个词
         lengths = sorted_cap_lens.cpu().numpy() - 1

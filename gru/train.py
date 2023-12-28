@@ -115,8 +115,8 @@ def main():
             # 2. 前馈计算
             predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
 
-            print("caps[:, 1:]:",caps[:, 1:])
-            print("sorted_captions[:, 1:]:",sorted_captions[:, 1:])
+            # print("caps[:, 1:]:",caps[:, 1:])
+            # print("sorted_captions[:, 1:]:",sorted_captions[:, 1:])
             # print(sorted_captions[0])
             # print(caplens)
             # print(lengths)
