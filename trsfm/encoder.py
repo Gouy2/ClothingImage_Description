@@ -14,7 +14,7 @@ class ViTEncoder(nn.Module):
         self.model.head = nn.Identity()  # 移除原始的头部分类层
 
         # 添加一个新的线性层以匹配 word_dim
-        self.adapt_layer = nn.Linear(1000, output_dim)  # 假设 ViT 输出为 1000 维
+        self.adapt_layer = nn.Linear(1000, output_dim)  
 
     def forward(self, images):
         features = self.model(images)

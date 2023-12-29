@@ -166,8 +166,10 @@ def main():
         print("验证中...")
         meteor , rouge_score = evaluate(valid_loader, model, config)
 
-        if best_res < meteor:
-            best_res = meteor
+        eval_score = meteor + rouge_score
+
+        if best_res < eval_score:
+            best_res = eval_score
             torch.save(state, config.best_checkpoint)
 
         torch.save(state, config.last_checkpoint)

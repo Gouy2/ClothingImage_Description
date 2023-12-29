@@ -13,11 +13,13 @@ class ImageEncoder(nn.Module):
         model = torchvision.models.resnet101(weights=ResNet101_Weights.DEFAULT)
         # ResNet-101网格表示提取器
         self.grid_rep_extractor = nn.Sequential(*(list(model.children())[:-2]))
+        # 冻结参数
         for param in self.grid_rep_extractor.parameters():
             param.requires_grad = finetuned
         
     def forward(self, images):
         out = self.grid_rep_extractor(images) 
+        # (batch_size, feature_channel, feature_size, feature_size)
         return out
     
 
