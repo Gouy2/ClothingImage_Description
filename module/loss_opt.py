@@ -37,6 +37,7 @@ class TransformerCrossEntropyLoss(nn.Module):
         predictions_packed = pack_padded_sequence(predictions, lengths, batch_first=True, enforce_sorted=False)[0]
         targets_packed = pack_padded_sequence(targets, lengths, batch_first=True, enforce_sorted=False)[0]
         return self.loss_fn(predictions_packed, targets_packed)
+    
 
         
 
@@ -49,9 +50,15 @@ def get_optimizer(model, config):
 
 # 调整学习速率
 def adjust_learning_rate(optimizer, epoch, config):
-    """
-        每隔lr_update个轮次，学习速率减小至当前十分之一，
-        实际上，我们并未使用该函数，这里是为了展示在训练过程中调整学习速率的方法。
-    """
-    optimizer.param_groups[0]['lr'] = config.encoder_learning_rate * (0.1 ** (epoch // config.lr_update))
-    optimizer.param_groups[1]['lr'] = config.decoder_learning_rate * (0.1 ** (epoch // config.lr_update))
+    if epoch < config.warmup_epochs:
+        # 预热阶段，学习率线性增加
+        encoder_lr = config.encoder_learning_rate * (epoch / config.warmup_epochs)
+        decoder_lr = config.decoder_learning_rate * (epoch /config.warmup_epochs)
+    else:
+        # 预热后，学习率线性减少
+        encoder_lr = config.encoder_learning_rate * (1 - (epoch - config.warmup_epochs) / (config.num_epochs - config.warmup_epochs))
+        decoder_lr = config.decoder_learning_rate * (1 - (epoch - config.warmup_epochs) / (config.num_epochs - config.warmup_epochs))
+
+    # 调整编码器和解码器的学习率
+    optimizer.param_groups[0]['lr'] = encoder_lr
+    optimizer.param_groups[1]['lr'] = decoder_lr

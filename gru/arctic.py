@@ -24,7 +24,7 @@ class ARCTIC(nn.Module):
         
         for image_code in image_codes:
             # 将图像表示复制k份
-            image_code = image_code.unsqueeze(0).repeat(beam_k, 1)
+            image_code = image_code.unsqueeze(0).repeat(beam_k, 1,1,1)
             # 生成k个候选句子，初始时，仅包含开始符号<start>
             cur_sents = torch.full((beam_k, 1), self.vocab['<start>'], dtype=torch.long).to(device)
             cur_sent_embed = self.decoder.embed(cur_sents)[:,0,:]

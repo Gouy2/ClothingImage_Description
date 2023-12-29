@@ -4,11 +4,13 @@ import torch
 import torch.nn as nn
 import sys
 from argparse import Namespace
+import time
+from tqdm.autonotebook import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from module.dataset import create_dataset,mktrainval
-from module.loss_opt import TransformerCrossEntropyLoss,get_optimizer
+from module.loss_opt import TransformerCrossEntropyLoss,get_optimizer,adjust_learning_rate
 from module.eval import evaluate
 from integrate import Transformer
 
@@ -33,7 +35,7 @@ config = Namespace(
     # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
     last_checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
-    beam_k = 5
+    beam_k = 3
 )
 
 
@@ -96,9 +98,21 @@ def main():
     fw = open('log.txt', 'w')
 
 
-
     for epoch in range(start_epoch, config.num_epochs):
-        for i, (imgs, caps, caplens) in enumerate(train_loader):
+        adjust_learning_rate(optimizer, epoch, config)
+
+        print('Epoch {}'.format(epoch))
+        print('-' * 10)
+
+        start_time = time.time()
+        model.train()
+
+        train_loss = 0
+        total_steps = len(train_loader)
+
+        progress = tqdm(enumerate(train_loader), desc="Loss: ", total=total_steps)
+
+        for i, (imgs, caps, caplens) in progress:
             
             # 1. 读取数据至GPU
             imgs = imgs.to(device)
@@ -130,9 +144,11 @@ def main():
 
             optimizer.step()       # 更新参数
 
-            if (i+1) % 100 == 0:
-                print('epoch %d, step %d: loss=%.2f' % (epoch, i+1, loss.cpu()))
-                fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i+1, loss.cpu()))
+            progress.set_description("Loss: {:.4f}".format(loss.cpu()))
+
+            if (i + 1) % 100 == 0:
+                tqdm.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i + 1, loss.cpu()))
+                fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i + 1, loss.cpu()))
                 fw.flush()
 
             state = {
@@ -142,26 +158,33 @@ def main():
                     'optimizer': optimizer
                     }
             
-            if (i+1) % config.evaluate_step == 0:
-                print("验证中...")
-                meteor , rouge_score = evaluate(valid_loader, model, config)
 
-                # 5. 选择模型
-                if best_res < meteor:
-                    best_res = meteor
-                    torch.save(state, config.best_checkpoint)
+        progress.close()  # 关闭进度条
 
-                torch.save(state, config.last_checkpoint)
+        end_time = time.time()
+        tqdm.write('TrainLoss: {:.3f} | Time Elapsed {:.3f} sec'.format(train_loss / total_steps, end_time - start_time))
 
-                fw.write('Validation@epoch, %d, step, %d,METEOR=%.2f\n' % 
-                    (epoch, i+1, meteor))
+        print("验证中...")
+        meteor , rouge_score = evaluate(valid_loader, model, config)
+
+        if best_res < meteor:
+            best_res = meteor
+            torch.save(state, config.best_checkpoint)
+
+        torch.save(state, config.last_checkpoint)
+
+        fw.write('Validation@epoch, %d, METEOR=%.2f \n' % 
+            (epoch,  meteor))
+        fw.write('Validation@epoch, %d, ROUGE=%.2f \n' %
+            (epoch, rouge_score))
                 
-                fw.flush()
+        fw.flush()
 
-                print('Validation@epoch, %d, step, %d, METEOR=%.2f' % 
-                    (epoch, i+1, meteor))
-                print('Validation@epoch, %d, step, %d, ROUGE=%.2f' %
-                    (epoch, i+1, rouge_score))
+        print('Validation@epoch, %d, METEOR=%.2f' % 
+            (epoch, meteor))
+        print('Validation@epoch, %d, ROUGE=%.2f' %
+            (epoch, rouge_score))
+               
                 
     checkpoint = torch.load(config.best_checkpoint)
 
@@ -171,9 +194,13 @@ def main():
 
     print("Evaluate on the test set with the model that has the best performance on the validation set")
 
-    print('Epoch: %d, BLEU-4=%.2f' % 
+    print('Epoch: %d, METEOR=%.2f' % 
         (checkpoint['epoch'], meteor))
-    fw.write('Epoch: %d, BLEU-4=%.2f' % 
+    
+    print('Epoch: %d, ROUGE=%.2f' % 
+        (checkpoint['epoch'], rouge_score))
+    
+    fw.write('Epoch: %d, METEOR-4=%.2f' % 
         (checkpoint['epoch'], meteor))
     fw.close()
 

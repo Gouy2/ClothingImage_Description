@@ -10,7 +10,7 @@ from tqdm.autonotebook import tqdm
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from arctic import ARCTIC
-from module.loss_opt import PackedCrossEntropyLoss,get_optimizer
+from module.loss_opt import PackedCrossEntropyLoss,get_optimizer,adjust_learning_rate
 from module.eval import evaluate
 from module.dataset import create_dataset,mktrainval
 
@@ -28,6 +28,8 @@ config = Namespace(
     num_layers = 1, 
     encoder_learning_rate = 0.0001,
     decoder_learning_rate = 0.0005,
+    lr_update = 1, # 每隔多少个epoch，更新一次学习速率
+    warmup_epochs = 5, # 前warmup_epochs个epoch，学习速率线性增长
     num_epochs = 10,
     grad_clip = 5.0, 
     alpha_weight = 1.0, 
@@ -36,7 +38,7 @@ config = Namespace(
     # checkpoint = './model/ckpt_model.ckpt', 
     best_checkpoint = './model/best_model.ckpt', # 验证集上表现最优的模型的路径
     last_checkpoint = './model/last_model.ckpt', # 训练完成时的模型的路径
-    beam_k = 5
+    beam_k = 3
 )
 
 
@@ -100,6 +102,9 @@ def main():
 
 
     for epoch in range(start_epoch, config.num_epochs +start_epoch ):
+        adjust_learning_rate(optimizer, epoch, config)
+                             #.warmup_epochs, config.num_epochs, config.encoder_learning_rate, config.decoder_learning_rate)
+
         print('Epoch {}'.format(epoch))
         print('-' * 10)
 
@@ -121,15 +126,6 @@ def main():
             # 2. 前馈计算
             predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
 
-<<<<<<< Updated upstream
-            # print("caps[:, 1:]:",caps[:, 1:])
-            # print("sorted_captions[:, 1:]:",sorted_captions[:, 1:])
-            # print(sorted_captions[0])
-            # print(caplens)
-            # print(lengths)
-
-=======
->>>>>>> Stashed changes
             # 3. 计算损失
             # captions从第2个词开始为targets
             loss = loss_fn(predictions, sorted_captions[:, 1:], lengths)
@@ -150,7 +146,7 @@ def main():
             progress.set_description("Loss: {:.4f}".format(loss.cpu()))
 
             if (i + 1) % 100 == 0:
-                tqdm.write('epoch %d, step %d: loss=%.2f' % (epoch, i + 1, loss.cpu()))
+                tqdm.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i + 1, loss.cpu()))
                 fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i + 1, loss.cpu()))
                 fw.flush()
 
@@ -176,8 +172,10 @@ def main():
 
         torch.save(state, config.last_checkpoint)
 
-        fw.write('Validation@epoch, %d, METEOR=%.2f\n' % 
-                    (epoch,  meteor))
+        fw.write('Validation@epoch, %d, METEOR=%.2f \n' % 
+            (epoch,  meteor))
+        fw.write('Validation@epoch, %d, ROUGE=%.2f \n' %
+            (epoch, rouge_score))
                 
         fw.flush()
 
