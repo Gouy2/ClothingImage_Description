@@ -4,9 +4,8 @@ import torch
 import torch.nn as nn
 from argparse import Namespace
 import sys
-# from test import dataLoader,data,gru,Loss_opt,resnet
-# from dataloader import mktrainval
-# from dataProcess import create_dataset
+import time
+from tqdm.autonotebook import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
@@ -29,7 +28,7 @@ config = Namespace(
     num_layers = 1, 
     encoder_learning_rate = 0.0001,
     decoder_learning_rate = 0.0005,
-    num_epochs = 20,
+    num_epochs = 10,
     grad_clip = 5.0, 
     alpha_weight = 1.0, 
     evaluate_step = 300, # 每隔多少步在验证集上测试一次
@@ -101,32 +100,44 @@ def main():
 
 
     for epoch in range(start_epoch, config.num_epochs +start_epoch ):
-        for i, (imgs, caps, caplens) in enumerate(train_loader):
+        print('Epoch {}'.format(epoch))
+        print('-' * 10)
+
+        start_time = time.time()
+        model.train()
+
+        train_loss = 0
+        total_steps = len(train_loader)
+
+        progress = tqdm(enumerate(train_loader), desc="Loss: ", total=total_steps)
+
+        for i, (imgs, caps, caplens) in progress:
             optimizer.zero_grad()
             # 1. 读取数据至GPU
             imgs = imgs.to(device)
             caps = caps.to(device)
             caplens = caplens.to(device)
 
-            # print("imgs",imgs)
-            # print("caps",caps)
-            # print("caplens",caplens)
-
             # 2. 前馈计算
             predictions, alphas, sorted_captions, lengths, sorted_cap_indices = model(imgs, caps, caplens)
 
+<<<<<<< Updated upstream
             # print("caps[:, 1:]:",caps[:, 1:])
             # print("sorted_captions[:, 1:]:",sorted_captions[:, 1:])
             # print(sorted_captions[0])
             # print(caplens)
             # print(lengths)
 
+=======
+>>>>>>> Stashed changes
             # 3. 计算损失
             # captions从第2个词开始为targets
             loss = loss_fn(predictions, sorted_captions[:, 1:], lengths)
             # 重随机注意力正则项，使得模型尽可能全面的利用到每个网格
             # 要求所有时刻在同一个网格上的注意力分数的平方和接近1
             loss += config.alpha_weight * ((1. - alphas.sum(axis=1)) ** 2).mean()
+
+            train_loss += loss.item()
 
             loss.backward()
             # 梯度截断
@@ -136,9 +147,11 @@ def main():
             # 4. 更新参数
             optimizer.step()
             
-            if (i+1) % 100 == 0:
-                print('epoch %d, step %d: loss=%.2f' % (epoch, i+1, loss.cpu()))
-                fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i+1, loss.cpu()))
+            progress.set_description("Loss: {:.4f}".format(loss.cpu()))
+
+            if (i + 1) % 100 == 0:
+                tqdm.write('epoch %d, step %d: loss=%.2f' % (epoch, i + 1, loss.cpu()))
+                fw.write('epoch %d, step %d: loss=%.2f \n' % (epoch, i + 1, loss.cpu()))
                 fw.flush()
 
             state = {
@@ -148,26 +161,31 @@ def main():
                     'optimizer': optimizer
                     }
             
-            if (i+1) % config.evaluate_step == 0:
-                print("验证中...")
-                meteor , rouge_score = evaluate(valid_loader, model, config)
 
-                # 5. 选择模型
-                if best_res < meteor:
-                    best_res = meteor
-                    torch.save(state, config.best_checkpoint)
+        progress.close()  # 关闭进度条
 
-                torch.save(state, config.last_checkpoint)
+        end_time = time.time()
+        tqdm.write('TrainLoss: {:.3f} | Time Elapsed {:.3f} sec'.format(train_loss / total_steps, end_time - start_time))
 
-                fw.write('Validation@epoch, %d, step, %d,METEOR=%.2f\n' % 
-                    (epoch, i+1, meteor))
+        print("验证中...")
+        meteor , rouge_score = evaluate(valid_loader, model, config)
+
+        if best_res < meteor:
+            best_res = meteor
+            torch.save(state, config.best_checkpoint)
+
+        torch.save(state, config.last_checkpoint)
+
+        fw.write('Validation@epoch, %d, METEOR=%.2f\n' % 
+                    (epoch,  meteor))
                 
-                fw.flush()
+        fw.flush()
 
-                print('Validation@epoch, %d, step, %d, METEOR=%.2f' % 
-                    (epoch, i+1, meteor))
-                print('Validation@epoch, %d, step, %d, ROUGE=%.2f' %
-                    (epoch, i+1, rouge_score))
+        print('Validation@epoch, %d, METEOR=%.2f' % 
+            (epoch, meteor))
+        print('Validation@epoch, %d, ROUGE=%.2f' %
+            (epoch, rouge_score))
+               
                 
     checkpoint = torch.load(config.best_checkpoint)
 

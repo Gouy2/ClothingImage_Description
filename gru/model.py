@@ -95,9 +95,24 @@ class AttentionDecoder(nn.Module):
                         (batch_size, image_code_dim)
         """
         batch_size, image_code_dim = image_code.size(0), image_code.size(1)
+<<<<<<< Updated upstream
         
+=======
+        # -> (batch_size, grid_height, grid_width, image_code_dim) 
+        image_code = image_code.permute(0, 2, 3, 1)  
+        # -> (batch_size, grid_height * grid_width, image_code_dim)
+        image_code = image_code.view(batch_size, -1, image_code_dim)
+
+        # print("image_code.shape",image_code.shape) 
+
+>>>>>>> Stashed changes
         # （1）按照caption的长短排序
         sorted_cap_lens, sorted_cap_indices = torch.sort(cap_lens, 0, True)
+
+        # print("sorted_cap_lens",sorted_cap_lens)    
+        # print("sorted_cap_indices",sorted_cap_indices)
+
+        
         captions = captions[sorted_cap_indices]
         image_code = image_code[sorted_cap_indices]
 

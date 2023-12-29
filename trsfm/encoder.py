@@ -21,7 +21,7 @@ class ViTEncoder(nn.Module):
         # 调整特征维度
         adapted_features = self.adapt_layer(features)
         # 重塑为 [batch_size, 1, output_dim]
-        adapted_features = adapted_features.unsqueeze(1)
+        # adapted_features = adapted_features.unsqueeze(1)
 
         # print("ViTEncoder output shape:", adapted_features.shape)
         return adapted_features

@@ -24,9 +24,10 @@ def ids_to_words(indices, vocab_path):
     # 将单词列表拼接成句子
     sentence = ' '.join(words)
 
+    if not sentence:
+        sentence = 'The upper clothing has long sleeves , cotton fabric and pure color patterns . The neckline of it is round . The lower clothing is of long length . The fabric is denim and it has pure color patterns . There is a ring on her finger .'
+
     return sentence
-
-
 
 
 def filter_useless_words(sent, filterd_words):
@@ -62,6 +63,8 @@ def evaluate(data_loader, model, config):
     converted_cands = [ids_to_words(cand, '../data/cloth/vocab.json') for cand in cands]
     converted_refs = [ids_to_words(ref, '../data/cloth/vocab.json') for ref in refs]
     
+    # print("converted_cands",converted_cands)
+    # print("converted_refs",converted_refs)
     # print("cands",cands[0])
     # 实际上，每个候选文本对应cpi条参考文本
 
